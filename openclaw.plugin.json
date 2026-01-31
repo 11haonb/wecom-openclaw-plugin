@@ -1,0 +1,13 @@
+{
+  "id": "wecom",
+  "name": "WeCom",
+  "description": "WeCom (企业微信) channel plugin for OpenClaw",
+  "channels": [
+    "wecom"
+  ],
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

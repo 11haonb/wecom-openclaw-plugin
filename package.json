@@ -1,0 +1,41 @@
+{
+  "name": "@openclaw/wecom",
+  "version": "2026.1.30",
+  "type": "module",
+  "description": "OpenClaw WeCom (企业微信) channel plugin",
+  "openclaw": {
+    "extensions": [
+      "./index.ts"
+    ],
+    "channel": {
+      "id": "wecom",
+      "label": "WeCom",
+      "selectionLabel": "WeCom (企业微信)",
+      "detailLabel": "WeCom Bot",
+      "docsPath": "/channels/wecom",
+      "docsLabel": "wecom",
+      "blurb": "企业微信应用消息，支持消息加解密和回调。",
+      "aliases": [
+        "wework",
+        "企业微信",
+        "qywx"
+      ],
+      "order": 60
+    },
+    "install": {
+      "npmSpec": "@openclaw/wecom",
+      "localPath": "extensions/wecom",
+      "defaultChoice": "local"
+    }
+  },
+  "dependencies": {
+    "fast-xml-parser": "^4.3.0",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "openclaw": "workspace:*"
+  },
+  "peerDependencies": {
+    "openclaw": ">=2026.1.26"
+  }
+}
