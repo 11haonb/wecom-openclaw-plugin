@@ -264,17 +264,83 @@ export async function processInboundMessage(
     return;
   }
 
-  // 目前只处理文本消息
-  if (msg.msgType !== "text" || !msg.content) {
-    console.log(`[WeCom] Unsupported message type: ${msg.msgType}`);
+  const userId = msg.fromUserName;
+  const accountId = `wecom:${accountConfig.corpId}:${accountConfig.agentId}`;
+  const client = getApiClient(accountConfig);
+
+  // 处理不同类型的消息
+  let content = "";
+  const mediaFiles: string[] = [];
+
+  switch (msg.msgType) {
+    case "text":
+      content = msg.content?.trim() || "";
+      break;
+
+    case "image":
+      if (msg.mediaId) {
+        try {
+          console.log(`[WeCom] Downloading image from user ${userId}...`);
+          const filePath = await client.downloadMedia(msg.mediaId);
+          mediaFiles.push(filePath);
+          content = `[用户发送了一张图片: ${filePath}]`;
+          console.log(`[WeCom] Image downloaded: ${filePath}`);
+        } catch (err) {
+          console.error(`[WeCom] Failed to download image:`, err);
+          content = "[用户发送了一张图片，但下载失败]";
+        }
+      }
+      break;
+
+    case "voice":
+      if (msg.mediaId) {
+        try {
+          console.log(`[WeCom] Downloading voice from user ${userId}...`);
+          const filePath = await client.downloadMedia(msg.mediaId);
+          mediaFiles.push(filePath);
+          content = `[用户发送了一条语音消息: ${filePath}]`;
+          console.log(`[WeCom] Voice downloaded: ${filePath}`);
+        } catch (err) {
+          console.error(`[WeCom] Failed to download voice:`, err);
+          content = "[用户发送了一条语音消息，但下载失败]";
+        }
+      }
+      break;
+
+    case "video":
+      if (msg.mediaId) {
+        try {
+          console.log(`[WeCom] Downloading video from user ${userId}...`);
+          const filePath = await client.downloadMedia(msg.mediaId);
+          mediaFiles.push(filePath);
+          content = `[用户发送了一个视频: ${filePath}]`;
+          console.log(`[WeCom] Video downloaded: ${filePath}`);
+        } catch (err) {
+          console.error(`[WeCom] Failed to download video:`, err);
+          content = "[用户发送了一个视频，但下载失败]";
+        }
+      }
+      break;
+
+    case "location":
+      content = `[用户发送了位置: ${msg.label || "未知位置"}, 坐标: (${msg.locationX}, ${msg.locationY})]`;
+      break;
+
+    case "link":
+      content = `[用户发送了链接: ${msg.title || "无标题"} - ${msg.url || "无URL"}]`;
+      break;
+
+    default:
+      console.log(`[WeCom] Unsupported message type: ${msg.msgType}`);
+      return;
+  }
+
+  if (!content) {
+    console.log(`[WeCom] Empty message content, skipping`);
     return;
   }
 
-  const userId = msg.fromUserName;
-  const content = msg.content.trim();
-  const accountId = `wecom:${accountConfig.corpId}:${accountConfig.agentId}`;
-
-  console.log(`[WeCom] Processing message from ${userId}: ${content}`);
+  console.log(`[WeCom] Processing ${msg.msgType} message from ${userId}: ${content.substring(0, 100)}`);
 
   try {
     // 加载 OpenClaw 配置
@@ -313,6 +379,8 @@ export async function processInboundMessage(
       timestamp: new Date(msg.createTime * 1000),
       text: content,
       raw: msg,
+      // 添加媒体文件路径供 agent 使用
+      ...(mediaFiles.length > 0 && { mediaFiles }),
     };
 
     // 使用 OpenClaw 的消息分发系统

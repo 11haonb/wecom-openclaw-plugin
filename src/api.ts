@@ -413,4 +413,178 @@ export class WeComApiClient {
     };
     return mimeTypes[ext] || "application/octet-stream";
   }
+
+  /**
+   * 下载媒体文件
+   * @param mediaId 媒体ID
+   * @param savePath 保存路径（可选，不提供则自动生成）
+   * @returns 保存的文件路径
+   */
+  async downloadMedia(mediaId: string, savePath?: string): Promise<string> {
+    console.log(`[WeCom API] Downloading media: ${mediaId.substring(0, 20)}...`);
+    const token = await this.getToken();
+    const url = `https://qyapi.weixin.qq.com/cgi-bin/media/get?access_token=${token}&media_id=${mediaId}`;
+
+    const tempDir = "/tmp/wecom-media";
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+
+    const destPath = savePath || path.join(tempDir, `media-${Date.now()}`);
+
+    return new Promise((resolve, reject) => {
+      const urlObj = new URL(url);
+      const options = {
+        hostname: urlObj.hostname,
+        port: 443,
+        path: urlObj.pathname + urlObj.search,
+        method: "GET",
+        timeout: 60000,
+        family: 4,
+      };
+
+      console.log(`[WeCom API] Downloading from: ${urlObj.hostname}${urlObj.pathname}`);
+
+      const req = https.request(options, (res) => {
+        // Check if response is JSON (error) or binary (file)
+        const contentType = res.headers["content-type"] || "";
+
+        if (contentType.includes("application/json") || contentType.includes("text/plain")) {
+          // Error response
+          const chunks: Buffer[] = [];
+          res.on("data", (chunk) => chunks.push(chunk));
+          res.on("end", () => {
+            const body = Buffer.concat(chunks).toString("utf8");
+            console.log(`[WeCom API] Download error response: ${body}`);
+            try {
+              const json = JSON.parse(body);
+              reject(new Error(`Download failed: [${json.errcode}] ${json.errmsg}`));
+            } catch {
+              reject(new Error(`Download failed: ${body}`));
+            }
+          });
+          return;
+        }
+
+        // Get file extension from Content-Disposition or Content-Type
+        let ext = this.getExtFromContentType(contentType);
+        const disposition = res.headers["content-disposition"];
+        if (disposition) {
+          const match = disposition.match(/filename="?([^";\s]+)"?/i);
+          if (match) {
+            ext = path.extname(match[1]) || ext;
+          }
+        }
+
+        const finalPath = destPath.includes(".") ? destPath : destPath + ext;
+        const file = fs.createWriteStream(finalPath);
+
+        res.pipe(file);
+        file.on("finish", () => {
+          file.close();
+          console.log(`[WeCom API] Downloaded to: ${finalPath}`);
+          resolve(finalPath);
+        });
+        file.on("error", (err) => {
+          fs.unlink(finalPath, () => {});
+          reject(err);
+        });
+      });
+
+      req.on("error", (err) => {
+        console.error(`[WeCom API] Download error: ${err.message}`);
+        reject(err);
+      });
+
+      req.on("timeout", () => {
+        req.destroy();
+        reject(new Error("Download timeout"));
+      });
+
+      req.end();
+    });
+  }
+
+  private getExtFromContentType(contentType: string): string {
+    if (contentType.includes("image/jpeg")) return ".jpg";
+    if (contentType.includes("image/png")) return ".png";
+    if (contentType.includes("image/gif")) return ".gif";
+    if (contentType.includes("image/webp")) return ".webp";
+    if (contentType.includes("audio/amr")) return ".amr";
+    if (contentType.includes("audio/mpeg")) return ".mp3";
+    if (contentType.includes("video/mp4")) return ".mp4";
+    if (contentType.includes("application/pdf")) return ".pdf";
+    return "";
+  }
+
+  /**
+   * 发送语音消息
+   * @param touser 接收者用户ID
+   * @param mediaId 媒体ID (通过 uploadMedia 获取)
+   */
+  async sendVoice(touser: string, mediaId: string): Promise<WeComSendMessageResponse> {
+    console.log(`[WeCom API] Sending voice to ${touser}`);
+    const token = await this.getToken();
+    const url = `https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=${token}`;
+
+    const body = JSON.stringify({
+      touser,
+      msgtype: "voice",
+      agentid: this.config.agentId,
+      voice: { media_id: mediaId },
+    });
+
+    return this.httpPost<WeComSendMessageResponse>(url, body);
+  }
+
+  /**
+   * 发送视频消息
+   * @param touser 接收者用户ID
+   * @param mediaId 媒体ID
+   * @param title 视频标题（可选）
+   * @param description 视频描述（可选）
+   */
+  async sendVideo(
+    touser: string,
+    mediaId: string,
+    title?: string,
+    description?: string
+  ): Promise<WeComSendMessageResponse> {
+    console.log(`[WeCom API] Sending video to ${touser}`);
+    const token = await this.getToken();
+    const url = `https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=${token}`;
+
+    const body = JSON.stringify({
+      touser,
+      msgtype: "video",
+      agentid: this.config.agentId,
+      video: {
+        media_id: mediaId,
+        ...(title && { title }),
+        ...(description && { description }),
+      },
+    });
+
+    return this.httpPost<WeComSendMessageResponse>(url, body);
+  }
+
+  /**
+   * 发送文件消息
+   * @param touser 接收者用户ID
+   * @param mediaId 媒体ID
+   */
+  async sendFile(touser: string, mediaId: string): Promise<WeComSendMessageResponse> {
+    console.log(`[WeCom API] Sending file to ${touser}`);
+    const token = await this.getToken();
+    const url = `https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=${token}`;
+
+    const body = JSON.stringify({
+      touser,
+      msgtype: "file",
+      agentid: this.config.agentId,
+      file: { media_id: mediaId },
+    });
+
+    return this.httpPost<WeComSendMessageResponse>(url, body);
+  }
 }
