@@ -154,4 +154,4 @@ node dist/entry.js gateway
 ## 获取帮助
 
 - 查看日志：`tail -f /tmp/gateway.log`
-- 提交 Issue：[GitHub Issues](https://github.com/liujinqi/wecom-openclaw-integration/issues)
+- 联系作者：[liujinqi@bit.edu.cn](mailto:liujinqi@bit.edu.cn)

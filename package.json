@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "description": "WeCom (企业微信) integration plugin for OpenClaw - Connect your AI agent to WeCom",
-  "author": "liujinqi",
+  "author": "liujinqi <liujinqi@bit.edu.cn>",
   "license": "MIT",
   "repository": {
     "type": "git",

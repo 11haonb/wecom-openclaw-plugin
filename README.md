@@ -1,5 +1,6 @@
 <p align="center">
-  <img src="https://img.icons8.com/color/96/weixing.png" alt="WeCom Logo" width="80" height="80">
+  <img src="https://wwcdn.weixin.qq.com/node/wework/images/202103261702.c985c498b7.png" alt="WeCom Logo" width="80" height="80">
+  <img src="https://res.wx.qq.com/a/wx_fed/assets/res/NTI4MWU5.ico" alt="WeChat Logo" width="80" height="80">
 </p>
 
 <h1 align="center">WeCom OpenClaw Integration</h1>
@@ -9,24 +10,18 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/liujinqi/wecom-openclaw-integration/blob/main/LICENSE">
+  <a href="./LICENSE">
     <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
   </a>
-  <a href="https://www.npmjs.com/package/wecom-openclaw-integration">
-    <img src="https://img.shields.io/npm/v/wecom-openclaw-integration.svg" alt="npm version">
-  </a>
-  <a href="https://github.com/liujinqi/wecom-openclaw-integration/stargazers">
-    <img src="https://img.shields.io/github/stars/liujinqi/wecom-openclaw-integration.svg" alt="GitHub stars">
-  </a>
-  <a href="https://github.com/liujinqi/wecom-openclaw-integration/issues">
-    <img src="https://img.shields.io/github/issues/liujinqi/wecom-openclaw-integration.svg" alt="GitHub issues">
-  </a>
+  <img src="https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg" alt="Node Version">
+  <img src="https://img.shields.io/badge/platform-WeCom-07C160.svg" alt="Platform">
+  <img src="https://img.shields.io/badge/language-TypeScript-3178C6.svg" alt="Language">
 </p>
 
 <p align="center">
   <a href="#-quick-start">Quick Start</a> •
   <a href="#-features">Features</a> •
-  <a href="#-remote-browser-control">Browser Control</a> •
+  <a href="#%EF%B8%8F-remote-browser-control">Browser Control</a> •
   <a href="#-documentation">Docs</a> •
   <a href="./docs/QUICKSTART_CN.md">中文文档</a>
 </p>
@@ -500,13 +495,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 <p align="center">
   <a href="https://github.com/openclaw/openclaw">OpenClaw</a> •
-  <a href="https://developer.work.weixin.qq.com/document/">WeCom Docs</a> •
-  <a href="https://github.com/liujinqi/wecom-openclaw-integration/issues">Report Bug</a> •
-  <a href="https://github.com/liujinqi/wecom-openclaw-integration/issues">Request Feature</a>
+  <a href="https://developer.work.weixin.qq.com/document/">WeCom Developer Docs</a>
 </p>
 
 ---
 
 <p align="center">
-  Made with ❤️ by <a href="https://github.com/liujinqi">liujinqi</a>
+  Made with ❤️ by <a href="mailto:liujinqi@bit.edu.cn">liujinqi</a> @ Beijing Institute of Technology
 </p>
