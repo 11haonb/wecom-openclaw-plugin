@@ -40,7 +40,8 @@
     "install": {
       "npmSpec": "wecom-openclaw-integration",
       "localPath": "extensions/wecom",
-      "defaultChoice": "local"
+      "defaultChoice": "local",
+      "pluginId": "wecom"
     }
   },
   "dependencies": {

@@ -13,6 +13,10 @@
 </p>
 
 <p align="center">
+  <em>For <a href="https://github.com/openclaw/openclaw">OpenClaw</a> (formerly known as Moltbot, originally Clawdbot)</em>
+</p>
+
+<p align="center">
   <a href="./LICENSE">
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License">
   </a>
@@ -218,11 +222,14 @@ Add to `~/.openclaw/openclaw.json`:
 </details>
 
 <details>
-<summary><strong>2. Install Node Host on Your PC</strong></summary>
+<summary><strong>2. Install and Run Node Host on Your PC</strong></summary>
 
 ```bash
+# Install OpenClaw
 npm install -g openclaw
-openclaw node-host --gateway-host YOUR_SERVER_IP --gateway-port 18789
+
+# Connect to your server
+openclaw node run --host YOUR_SERVER_IP --port 18789
 ```
 
 </details>

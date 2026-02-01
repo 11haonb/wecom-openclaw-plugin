@@ -74,14 +74,12 @@ pnpm add -g openclaw
 ### Step 3: Connect Node Host to Server / 连接到服务器
 
 ```bash
-openclaw node-host \
-  --gateway-host YOUR_SERVER_IP \
-  --gateway-port 18789
+openclaw node run --host YOUR_SERVER_IP --port 18789
 ```
 
 **Example:**
 ```bash
-openclaw node-host --gateway-host 192.168.1.100 --gateway-port 18789
+openclaw node run --host 192.168.1.100 --port 18789
 ```
 
 You should see:
