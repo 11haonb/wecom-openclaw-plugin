@@ -1,21 +1,24 @@
 <p align="center">
-  <img src="https://wwcdn.weixin.qq.com/node/wework/images/202103261702.c985c498b7.png" alt="WeCom Logo" width="80" height="80">
-  <img src="https://res.wx.qq.com/a/wx_fed/assets/res/NTI4MWU5.ico" alt="WeChat Logo" width="80" height="80">
+  <img src="https://api.iconify.design/tdesign/logo-wecom.svg?color=%2307C160" alt="WeCom Logo" width="80" height="80">
+  &nbsp;&nbsp;
+  <img src="https://api.iconify.design/simple-icons/wechat.svg?color=%2307C160" alt="WeChat Logo" width="80" height="80">
 </p>
 
 <h1 align="center">WeCom OpenClaw Integration</h1>
 
 <p align="center">
   <strong>🤖 Connect your AI agent to WeCom (企业微信)</strong>
+  <br>
+  <sub>Send messages via WeCom → AI processes → Control your computer remotely</sub>
 </p>
 
 <p align="center">
   <a href="./LICENSE">
-    <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
+    <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License">
   </a>
-  <img src="https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg" alt="Node Version">
-  <img src="https://img.shields.io/badge/platform-WeCom-07C160.svg" alt="Platform">
-  <img src="https://img.shields.io/badge/language-TypeScript-3178C6.svg" alt="Language">
+  <img src="https://img.shields.io/badge/Node.js-%3E%3D18-339933?logo=node.js&logoColor=white" alt="Node Version">
+  <img src="https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white" alt="TypeScript">
+  <img src="https://img.shields.io/badge/WeCom-企业微信-07C160?logo=wechat&logoColor=white" alt="WeCom">
 </p>
 
 <p align="center">
