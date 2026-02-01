@@ -1,8 +1,23 @@
 {
-  "name": "@openclaw/wecom",
-  "version": "2026.1.30",
+  "name": "wecom-openclaw-integration",
+  "version": "1.0.0",
   "type": "module",
-  "description": "OpenClaw WeCom (企业微信) channel plugin",
+  "description": "WeCom (企业微信) integration plugin for OpenClaw - Connect your AI agent to WeCom",
+  "author": "liujinqi",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/liujinqi/wecom-openclaw-integration"
+  },
+  "keywords": [
+    "wecom",
+    "wechat-work",
+    "企业微信",
+    "openclaw",
+    "ai-agent",
+    "chatbot",
+    "automation"
+  ],
   "openclaw": {
     "extensions": [
       "./index.ts"
@@ -23,7 +38,7 @@
       "order": 60
     },
     "install": {
-      "npmSpec": "@openclaw/wecom",
+      "npmSpec": "wecom-openclaw-integration",
       "localPath": "extensions/wecom",
       "defaultChoice": "local"
     }

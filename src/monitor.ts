@@ -5,10 +5,12 @@
  */
 import type { IncomingMessage, ServerResponse } from "node:http";
 import http from "node:http";
-import type { WeComAccountConfig, WeComParsedMessage } from "./types.js";
+import type { WeComAccountConfig, WeComParsedMessage, WeComExtendedConfig } from "./types.js";
 import { WeComCrypto } from "./crypto.js";
-import { parseMessage, getMessageId, isEventMessage } from "./parser.js";
+import { parseMessage, getMessageId, isEventMessage, isGroupMessage, getSessionId, getSenderId } from "./parser.js";
 import { WeComApiClient } from "./api.js";
+import { shouldRespond, processMessageContent, type MentionConfig } from "./mention.js";
+import { isGroupAllowed, isUserAllowedInGroup, groupRequiresMention, DEFAULT_GROUP_CONFIG } from "./group-policy.js";
 
 // OpenClaw imports
 import { dispatchReplyWithBufferedBlockDispatcher } from "../../../src/auto-reply/reply/provider-dispatcher.js";
@@ -16,6 +18,8 @@ import { resolveEffectiveMessagesConfig } from "../../../src/agents/identity.js"
 import { chunkMarkdownText } from "../../../src/auto-reply/chunk.js";
 import { resolveAgentRoute } from "../../../src/routing/resolve-route.js";
 import { loadConfig } from "../../../src/config/config.js";
+import { loadWebMedia } from "../../../src/web/media.js";
+import { mediaKindFromMime } from "../../../src/media/constants.js";
 import type { MsgContext } from "../../../src/auto-reply/types.js";
 
 // ============================================
@@ -254,19 +258,82 @@ async function handleRequest(
 // ============================================
 // 消息处理核心
 // ============================================
+export interface ProcessMessageOptions {
+  /** 扩展配置 (群聊策略等) */
+  extendedConfig?: WeComExtendedConfig;
+  /** 是否处理事件消息 */
+  handleEvents?: boolean;
+}
+
+// 事件处理器 (延迟导入避免循环依赖)
+let eventDispatcher: ((msg: WeComParsedMessage, config: WeComAccountConfig) => Promise<void>) | null = null;
+
+/**
+ * 设置事件分发器
+ */
+export function setEventDispatcher(
+  dispatcher: (msg: WeComParsedMessage, config: WeComAccountConfig) => Promise<void>
+): void {
+  eventDispatcher = dispatcher;
+}
+
 export async function processInboundMessage(
   accountConfig: WeComAccountConfig,
-  msg: WeComParsedMessage
+  msg: WeComParsedMessage,
+  options: ProcessMessageOptions = {}
 ): Promise<void> {
-  // 跳过事件消息
+  // 处理事件消息
   if (isEventMessage(msg)) {
     console.log(`[WeCom] Event: ${msg.event} from ${msg.fromUserName}`);
+    if (options.handleEvents !== false && eventDispatcher) {
+      try {
+        await eventDispatcher(msg, accountConfig);
+      } catch (err) {
+        console.error(`[WeCom] Event dispatch error:`, err);
+      }
+    }
     return;
   }
 
-  const userId = msg.fromUserName;
+  const senderId = getSenderId(msg);
+  const sessionId = getSessionId(msg);
+  const isGroup = isGroupMessage(msg);
   const accountId = `wecom:${accountConfig.corpId}:${accountConfig.agentId}`;
   const client = getApiClient(accountConfig);
+  const extConfig = options.extendedConfig;
+
+  // 群聊日志
+  if (isGroup) {
+    console.log(`[WeCom] Group message from ${senderId} in group ${msg.chatId}`);
+
+    // 群聊访问控制检查
+    if (msg.chatId && !isGroupAllowed(msg.chatId, extConfig)) {
+      console.log(`[WeCom] Group ${msg.chatId} is not allowed, ignoring message`);
+      return;
+    }
+
+    // 用户访问控制检查
+    if (msg.chatId && !isUserAllowedInGroup(senderId, msg.chatId, extConfig)) {
+      console.log(`[WeCom] User ${senderId} is not allowed in group ${msg.chatId}, ignoring message`);
+      return;
+    }
+  }
+
+  // 构建提及配置
+  const mentionConfig: MentionConfig = {
+    botName: extConfig?.botName ?? DEFAULT_GROUP_CONFIG.botName,
+    botAliases: extConfig?.botAliases ?? DEFAULT_GROUP_CONFIG.botAliases,
+  };
+
+  // 群聊 @提及检测
+  const requireMention = isGroup && msg.chatId ? groupRequiresMention(msg.chatId, extConfig) : false;
+
+  // 检查是否需要响应
+  const rawContent = msg.content?.trim() || "";
+  if (isGroup && !shouldRespond(rawContent, isGroup, requireMention, mentionConfig)) {
+    console.log(`[WeCom] Group message ignored (no mention): ${rawContent.substring(0, 50)}`);
+    return;
+  }
 
   // 处理不同类型的消息
   let content = "";
@@ -274,13 +341,14 @@ export async function processInboundMessage(
 
   switch (msg.msgType) {
     case "text":
-      content = msg.content?.trim() || "";
+      // 处理文本内容，移除 @提及
+      content = processMessageContent(msg.content?.trim() || "", isGroup, mentionConfig);
       break;
 
     case "image":
       if (msg.mediaId) {
         try {
-          console.log(`[WeCom] Downloading image from user ${userId}...`);
+          console.log(`[WeCom] Downloading image from user ${senderId}...`);
           const filePath = await client.downloadMedia(msg.mediaId);
           mediaFiles.push(filePath);
           content = `[用户发送了一张图片: ${filePath}]`;
@@ -295,7 +363,7 @@ export async function processInboundMessage(
     case "voice":
       if (msg.mediaId) {
         try {
-          console.log(`[WeCom] Downloading voice from user ${userId}...`);
+          console.log(`[WeCom] Downloading voice from user ${senderId}...`);
           const filePath = await client.downloadMedia(msg.mediaId);
           mediaFiles.push(filePath);
           content = `[用户发送了一条语音消息: ${filePath}]`;
@@ -310,7 +378,7 @@ export async function processInboundMessage(
     case "video":
       if (msg.mediaId) {
         try {
-          console.log(`[WeCom] Downloading video from user ${userId}...`);
+          console.log(`[WeCom] Downloading video from user ${senderId}...`);
           const filePath = await client.downloadMedia(msg.mediaId);
           mediaFiles.push(filePath);
           content = `[用户发送了一个视频: ${filePath}]`;
@@ -318,6 +386,23 @@ export async function processInboundMessage(
         } catch (err) {
           console.error(`[WeCom] Failed to download video:`, err);
           content = "[用户发送了一个视频，但下载失败]";
+        }
+      }
+      break;
+
+    case "file":
+      if (msg.mediaId) {
+        try {
+          const fileName = msg.fileName || "未知文件";
+          const fileSize = msg.fileSize ? `${Math.round(msg.fileSize / 1024)}KB` : "未知大小";
+          console.log(`[WeCom] Downloading file from user ${senderId}: ${fileName} (${fileSize})...`);
+          const filePath = await client.downloadMedia(msg.mediaId);
+          mediaFiles.push(filePath);
+          content = `[用户发送了文件: ${fileName} (${fileSize}), 路径: ${filePath}]`;
+          console.log(`[WeCom] File downloaded: ${filePath}`);
+        } catch (err) {
+          console.error(`[WeCom] Failed to download file:`, err);
+          content = `[用户发送了文件: ${msg.fileName || "未知文件"}，但下载失败]`;
         }
       }
       break;
@@ -330,6 +415,25 @@ export async function processInboundMessage(
       content = `[用户发送了链接: ${msg.title || "无标题"} - ${msg.url || "无URL"}]`;
       break;
 
+    case "emotion":
+      if (msg.mediaId) {
+        try {
+          // emotionType: 1=gif表情, 2=png表情
+          const emotionTypeName = msg.emotionType === 1 ? "GIF" : "PNG";
+          console.log(`[WeCom] Downloading ${emotionTypeName} emotion from user ${senderId}...`);
+          const filePath = await client.downloadMedia(msg.mediaId);
+          mediaFiles.push(filePath);
+          content = `[用户发送了${emotionTypeName}表情: ${filePath}]`;
+          console.log(`[WeCom] Emotion downloaded: ${filePath}`);
+        } catch (err) {
+          console.error(`[WeCom] Failed to download emotion:`, err);
+          content = "[用户发送了一个表情，但下载失败]";
+        }
+      } else {
+        content = "[用户发送了一个表情]";
+      }
+      break;
+
     default:
       console.log(`[WeCom] Unsupported message type: ${msg.msgType}`);
       return;
@@ -340,22 +444,26 @@ export async function processInboundMessage(
     return;
   }
 
-  console.log(`[WeCom] Processing ${msg.msgType} message from ${userId}: ${content.substring(0, 100)}`);
+  console.log(`[WeCom] Processing ${msg.msgType} message from ${senderId}${isGroup ? ` in group ${msg.chatId}` : ""}: ${content.substring(0, 100)}`);
 
   try {
     // 加载 OpenClaw 配置
     const cfg = await loadConfig();
 
-    // 解析路由
+    // 解析路由 - 群聊使用群 ID，单聊使用用户 ID
+    const chatType = isGroup ? "group" : "direct";
     const route = resolveAgentRoute({
       cfg,
       channel: "wecom",
       accountId,
-      chatId: userId,
-      chatType: "direct",
+      chatId: sessionId,
+      chatType,
     });
 
-    console.log(`[WeCom] Route resolved: agentId=${route.agentId}`);
+    console.log(`[WeCom] Route resolved: agentId=${route.agentId}, chatType=${chatType}`);
+
+    // 构建发送者标签 (群聊显示用户 ID，单聊显示用户 ID)
+    const senderLabel = isGroup ? `${senderId}@${msg.chatId}` : senderId;
 
     // 构建消息上下文
     const ctx: MsgContext = {
@@ -364,24 +472,29 @@ export async function processInboundMessage(
       RawBody: content,
       CommandBody: content,
       BodyForCommands: content,
-      From: userId,
+      From: senderId,
       To: accountId,
-      SessionKey: `wecom:${userId}`,
+      SessionKey: `wecom:${sessionId}`,
       AccountId: accountId,
       MessageSid: msg.msgId || `wecom-${Date.now()}`,
       channel: "wecom",
       accountId,
-      chatId: userId,
-      chatType: "direct",
-      senderId: userId,
-      senderLabel: userId,
+      chatId: sessionId,
+      chatType,
+      senderId,
+      senderLabel,
       messageId: msg.msgId || `wecom-${Date.now()}`,
       timestamp: new Date(msg.createTime * 1000),
       text: content,
       raw: msg,
+      // 群聊相关字段
+      ...(isGroup && { groupId: msg.chatId }),
       // 添加媒体文件路径供 agent 使用
       ...(mediaFiles.length > 0 && { mediaFiles }),
     };
+
+    // 确定回复目标 (群聊回复到群，单聊回复给用户)
+    const replyTarget = isGroup ? msg.chatId! : senderId;
 
     // 使用 OpenClaw 的消息分发系统
     console.log(`[WeCom] Dispatching to AI agent...`);
@@ -394,21 +507,43 @@ export async function processInboundMessage(
         deliver: async (payload) => {
           const client = getApiClient(accountConfig);
 
-          // 处理图片
+          // 处理媒体文件
           const mediaUrls = payload.mediaUrls || (payload.mediaUrl ? [payload.mediaUrl] : []);
           if (mediaUrls.length > 0) {
-            console.log(`[WeCom] Delivering ${mediaUrls.length} image(s)...`);
+            console.log(`[WeCom] Delivering ${mediaUrls.length} media file(s) to ${replyTarget}...`);
             for (const url of mediaUrls) {
               try {
-                console.log(`[WeCom] Sending image: ${url.substring(0, 80)}...`);
-                const response = await client.sendImageFromUrl(userId, url);
-                if (response.errcode !== 0) {
-                  console.error(`[WeCom] Image send failed: [${response.errcode}] ${response.errmsg}`);
-                } else {
-                  console.log(`[WeCom] Image sent successfully`);
+                // 加载媒体并检测类型
+                const media = await loadWebMedia(url);
+                const kind = mediaKindFromMime(media.contentType ?? undefined);
+                console.log(`[WeCom] Sending ${kind}: ${url.substring(0, 80)}...`);
+
+                let response;
+                switch (kind) {
+                  case "image":
+                    response = await client.sendImageFromUrl(replyTarget, url);
+                    break;
+                  case "video":
+                    response = await client.sendVideoFromUrl(replyTarget, url);
+                    break;
+                  case "audio":
+                    // 企业微信语音需要 AMR 格式，暂时作为文件发送
+                    // TODO: 添加音频格式转换支持
+                    response = await client.sendFileFromUrl(replyTarget, url, media.fileName);
+                    break;
+                  case "document":
+                  default:
+                    response = await client.sendFileFromUrl(replyTarget, url, media.fileName);
+                    break;
                 }
-              } catch (imgErr) {
-                console.error(`[WeCom] Image send error:`, imgErr);
+
+                if (response.errcode !== 0) {
+                  console.error(`[WeCom] ${kind} send failed: [${response.errcode}] ${response.errmsg}`);
+                } else {
+                  console.log(`[WeCom] ${kind} sent successfully`);
+                }
+              } catch (mediaErr) {
+                console.error(`[WeCom] Media send error:`, mediaErr);
               }
             }
           }
@@ -416,13 +551,13 @@ export async function processInboundMessage(
           // 处理文本
           const text = payload.text || "";
           if (text) {
-            console.log(`[WeCom] Delivering reply: ${text.substring(0, 100)}...`);
+            console.log(`[WeCom] Delivering reply to ${replyTarget}: ${text.substring(0, 100)}...`);
 
             // 分块发送长消息
             const chunks = chunkMarkdownText(text, 2000);
 
             for (const chunk of chunks) {
-              const response = await client.sendText(userId, chunk);
+              const response = await client.sendText(replyTarget, chunk);
               if (response.errcode !== 0) {
                 throw new Error(`[${response.errcode}] ${response.errmsg}`);
               }
@@ -439,9 +574,9 @@ export async function processInboundMessage(
     });
 
     if (queuedFinal) {
-      console.log(`[WeCom] Response queued for ${userId}`);
+      console.log(`[WeCom] Response queued for ${replyTarget}`);
     } else {
-      console.log(`[WeCom] No response generated for message from ${userId}`);
+      console.log(`[WeCom] No response generated for message from ${senderId}`);
     }
   } catch (err) {
     console.error("[WeCom] Dispatch failed:", err);
@@ -449,7 +584,7 @@ export async function processInboundMessage(
     // 发送错误提示
     const client = getApiClient(accountConfig);
     await client.sendText(
-      userId,
+      replyTarget,
       `抱歉，处理消息时出错: ${err instanceof Error ? err.message : String(err)}`
     );
   }

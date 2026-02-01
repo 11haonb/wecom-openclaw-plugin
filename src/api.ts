@@ -69,36 +69,44 @@ export class WeComApiClient {
   }
 
   /**
-   * 发送文本消息
+   * 发送文本消息 (支持用户和群聊)
+   * @param target 目标 ID (用户 ID 或群聊 ID)
    */
-  async sendText(touser: string, content: string): Promise<WeComSendMessageResponse> {
-    console.log(`[WeCom API] Sending text to ${touser}, length=${content.length}`);
+  async sendText(target: string, content: string): Promise<WeComSendMessageResponse> {
+    console.log(`[WeCom API] Sending text to ${target}, length=${content.length}`);
     const token = await this.getToken();
     console.log(`[WeCom API] Got token: ${token.substring(0, 20)}...`);
     const url = `https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=${token}`;
 
+    // 判断是群聊还是用户
+    // 企业微信群聊 ID 通常以 "wr" 开头
+    const isGroupChat = target.startsWith("wr");
+
     const body = JSON.stringify({
-      touser,
+      ...(isGroupChat ? { chatid: target } : { touser: target }),
       msgtype: "text",
       agentid: this.config.agentId,
       text: { content },
     });
 
-    console.log(`[WeCom API] POST to ${url.substring(0, 60)}...`);
+    console.log(`[WeCom API] POST to ${url.substring(0, 60)}... (${isGroupChat ? "group" : "user"})`);
     const result = await this.httpPost<WeComSendMessageResponse>(url, body);
     console.log(`[WeCom API] Response: errcode=${result.errcode}, errmsg=${result.errmsg}`);
     return result;
   }
 
   /**
-   * 发送 Markdown 消息
+   * 发送 Markdown 消息 (支持用户和群聊)
+   * @param target 目标 ID (用户 ID 或群聊 ID)
    */
-  async sendMarkdown(touser: string, content: string): Promise<WeComSendMessageResponse> {
+  async sendMarkdown(target: string, content: string): Promise<WeComSendMessageResponse> {
     const token = await this.getToken();
     const url = `https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=${token}`;
 
+    const isGroupChat = target.startsWith("wr");
+
     const body = JSON.stringify({
-      touser,
+      ...(isGroupChat ? { chatid: target } : { touser: target }),
       msgtype: "markdown",
       agentid: this.config.agentId,
       markdown: { content },
@@ -133,17 +141,19 @@ export class WeComApiClient {
   }
 
   /**
-   * 发送图片消息
-   * @param touser 接收者用户ID
+   * 发送图片消息 (支持用户和群聊)
+   * @param target 目标 ID (用户 ID 或群聊 ID)
    * @param mediaId 媒体ID (通过 uploadMedia 获取)
    */
-  async sendImage(touser: string, mediaId: string): Promise<WeComSendMessageResponse> {
-    console.log(`[WeCom API] Sending image to ${touser}, mediaId=${mediaId.substring(0, 20)}...`);
+  async sendImage(target: string, mediaId: string): Promise<WeComSendMessageResponse> {
+    console.log(`[WeCom API] Sending image to ${target}, mediaId=${mediaId.substring(0, 20)}...`);
     const token = await this.getToken();
     const url = `https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=${token}`;
 
+    const isGroupChat = target.startsWith("wr");
+
     const body = JSON.stringify({
-      touser,
+      ...(isGroupChat ? { chatid: target } : { touser: target }),
       msgtype: "image",
       agentid: this.config.agentId,
       image: { media_id: mediaId },
@@ -518,17 +528,19 @@ export class WeComApiClient {
   }
 
   /**
-   * 发送语音消息
-   * @param touser 接收者用户ID
+   * 发送语音消息 (支持用户和群聊)
+   * @param target 目标 ID (用户 ID 或群聊 ID)
    * @param mediaId 媒体ID (通过 uploadMedia 获取)
    */
-  async sendVoice(touser: string, mediaId: string): Promise<WeComSendMessageResponse> {
-    console.log(`[WeCom API] Sending voice to ${touser}`);
+  async sendVoice(target: string, mediaId: string): Promise<WeComSendMessageResponse> {
+    console.log(`[WeCom API] Sending voice to ${target}`);
     const token = await this.getToken();
     const url = `https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=${token}`;
 
+    const isGroupChat = target.startsWith("wr");
+
     const body = JSON.stringify({
-      touser,
+      ...(isGroupChat ? { chatid: target } : { touser: target }),
       msgtype: "voice",
       agentid: this.config.agentId,
       voice: { media_id: mediaId },
@@ -538,24 +550,26 @@ export class WeComApiClient {
   }
 
   /**
-   * 发送视频消息
-   * @param touser 接收者用户ID
+   * 发送视频消息 (支持用户和群聊)
+   * @param target 目标 ID (用户 ID 或群聊 ID)
    * @param mediaId 媒体ID
    * @param title 视频标题（可选）
    * @param description 视频描述（可选）
    */
   async sendVideo(
-    touser: string,
+    target: string,
     mediaId: string,
     title?: string,
     description?: string
   ): Promise<WeComSendMessageResponse> {
-    console.log(`[WeCom API] Sending video to ${touser}`);
+    console.log(`[WeCom API] Sending video to ${target}`);
     const token = await this.getToken();
     const url = `https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=${token}`;
 
+    const isGroupChat = target.startsWith("wr");
+
     const body = JSON.stringify({
-      touser,
+      ...(isGroupChat ? { chatid: target } : { touser: target }),
       msgtype: "video",
       agentid: this.config.agentId,
       video: {
@@ -569,22 +583,275 @@ export class WeComApiClient {
   }
 
   /**
-   * 发送文件消息
-   * @param touser 接收者用户ID
+   * 发送文件消息 (支持用户和群聊)
+   * @param target 目标 ID (用户 ID 或群聊 ID)
    * @param mediaId 媒体ID
    */
-  async sendFile(touser: string, mediaId: string): Promise<WeComSendMessageResponse> {
-    console.log(`[WeCom API] Sending file to ${touser}`);
+  async sendFile(target: string, mediaId: string): Promise<WeComSendMessageResponse> {
+    console.log(`[WeCom API] Sending file to ${target}`);
     const token = await this.getToken();
     const url = `https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=${token}`;
 
+    const isGroupChat = target.startsWith("wr");
+
     const body = JSON.stringify({
-      touser,
+      ...(isGroupChat ? { chatid: target } : { touser: target }),
       msgtype: "file",
       agentid: this.config.agentId,
       file: { media_id: mediaId },
     });
 
     return this.httpPost<WeComSendMessageResponse>(url, body);
+  }
+
+  /**
+   * 上传并发送文件 (便捷方法)
+   * @param touser 接收者用户ID
+   * @param filePath 文件路径
+   */
+  async sendFileFile(touser: string, filePath: string): Promise<WeComSendMessageResponse> {
+    const uploadResult = await this.uploadMedia(filePath, "file");
+    if (uploadResult.errcode !== 0) {
+      throw new Error(`Upload failed: [${uploadResult.errcode}] ${uploadResult.errmsg}`);
+    }
+    return this.sendFile(touser, uploadResult.media_id);
+  }
+
+  /**
+   * 从 URL 下载文件并发送
+   * @param touser 接收者用户ID
+   * @param fileUrl 文件URL
+   * @param fileName 文件名（可选，用于确定扩展名）
+   */
+  async sendFileFromUrl(touser: string, fileUrl: string, fileName?: string): Promise<WeComSendMessageResponse> {
+    console.log(`[WeCom API] Downloading file from URL: ${fileUrl.substring(0, 60)}...`);
+
+    const tempDir = "/tmp/wecom-media";
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+
+    const ext = fileName ? path.extname(fileName) : this.getFileExtension(fileUrl);
+    const baseName = fileName || `file-${Date.now()}${ext}`;
+    const tempFile = path.join(tempDir, baseName);
+
+    await this.downloadFile(fileUrl, tempFile);
+    console.log(`[WeCom API] Downloaded to: ${tempFile}`);
+
+    try {
+      const result = await this.sendFileFile(touser, tempFile);
+      return result;
+    } finally {
+      try {
+        fs.unlinkSync(tempFile);
+      } catch (e) {
+        // ignore
+      }
+    }
+  }
+
+  /**
+   * 上传并发送视频 (便捷方法)
+   * @param touser 接收者用户ID
+   * @param filePath 视频文件路径
+   * @param title 视频标题（可选）
+   * @param description 视频描述（可选）
+   */
+  async sendVideoFile(
+    touser: string,
+    filePath: string,
+    title?: string,
+    description?: string
+  ): Promise<WeComSendMessageResponse> {
+    const uploadResult = await this.uploadMedia(filePath, "video");
+    if (uploadResult.errcode !== 0) {
+      throw new Error(`Upload failed: [${uploadResult.errcode}] ${uploadResult.errmsg}`);
+    }
+    return this.sendVideo(touser, uploadResult.media_id, title, description);
+  }
+
+  /**
+   * 从 URL 下载视频并发送
+   * @param touser 接收者用户ID
+   * @param videoUrl 视频URL
+   * @param title 视频标题（可选）
+   * @param description 视频描述（可选）
+   */
+  async sendVideoFromUrl(
+    touser: string,
+    videoUrl: string,
+    title?: string,
+    description?: string
+  ): Promise<WeComSendMessageResponse> {
+    console.log(`[WeCom API] Downloading video from URL: ${videoUrl.substring(0, 60)}...`);
+
+    const tempDir = "/tmp/wecom-media";
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+
+    const ext = this.getVideoExtension(videoUrl);
+    const tempFile = path.join(tempDir, `video-${Date.now()}${ext}`);
+
+    await this.downloadFile(videoUrl, tempFile);
+    console.log(`[WeCom API] Downloaded to: ${tempFile}`);
+
+    try {
+      const result = await this.sendVideoFile(touser, tempFile, title, description);
+      return result;
+    } finally {
+      try {
+        fs.unlinkSync(tempFile);
+      } catch (e) {
+        // ignore
+      }
+    }
+  }
+
+  /**
+   * 上传并发送语音 (便捷方法)
+   * 注意：企业微信只支持 AMR 格式语音，最长60秒
+   * @param touser 接收者用户ID
+   * @param filePath 语音文件路径 (必须是 AMR 格式)
+   */
+  async sendVoiceFile(touser: string, filePath: string): Promise<WeComSendMessageResponse> {
+    const uploadResult = await this.uploadMedia(filePath, "voice");
+    if (uploadResult.errcode !== 0) {
+      throw new Error(`Upload failed: [${uploadResult.errcode}] ${uploadResult.errmsg}`);
+    }
+    return this.sendVoice(touser, uploadResult.media_id);
+  }
+
+  private getFileExtension(url: string): string {
+    const urlPath = url.split("?")[0].toLowerCase();
+    const match = urlPath.match(/\.([a-z0-9]+)$/);
+    return match ? `.${match[1]}` : "";
+  }
+
+  private getVideoExtension(url: string): string {
+    const urlPath = url.split("?")[0].toLowerCase();
+    if (urlPath.endsWith(".mp4")) return ".mp4";
+    if (urlPath.endsWith(".mov")) return ".mov";
+    if (urlPath.endsWith(".avi")) return ".avi";
+    if (urlPath.endsWith(".wmv")) return ".wmv";
+    if (urlPath.endsWith(".webm")) return ".webm";
+    return ".mp4";
+  }
+
+  // ============================================
+  // 卡片消息
+  // ============================================
+
+  /**
+   * 发送文本卡片消息 (支持用户和群聊)
+   * @param target 目标 ID (用户 ID 或群聊 ID)
+   * @param card 文本卡片内容
+   */
+  async sendTextCard(
+    target: string,
+    card: { title: string; description: string; url: string; btntxt?: string }
+  ): Promise<WeComSendMessageResponse> {
+    console.log(`[WeCom API] Sending text card to ${target}: ${card.title}`);
+    const token = await this.getToken();
+    const url = `https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=${token}`;
+
+    const isGroupChat = target.startsWith("wr");
+
+    const body = JSON.stringify({
+      ...(isGroupChat ? { chatid: target } : { touser: target }),
+      msgtype: "textcard",
+      agentid: this.config.agentId,
+      textcard: {
+        title: card.title,
+        description: card.description,
+        url: card.url,
+        btntxt: card.btntxt || "详情",
+      },
+    });
+
+    return this.httpPost<WeComSendMessageResponse>(url, body);
+  }
+
+  /**
+   * 发送图文消息 (支持用户和群聊)
+   * @param target 目标 ID (用户 ID 或群聊 ID)
+   * @param articles 图文消息文章列表 (最多8条)
+   */
+  async sendNews(
+    target: string,
+    articles: Array<{ title: string; description?: string; url: string; picurl?: string; btntxt?: string }>
+  ): Promise<WeComSendMessageResponse> {
+    console.log(`[WeCom API] Sending news to ${target}: ${articles.length} article(s)`);
+    const token = await this.getToken();
+    const url = `https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=${token}`;
+
+    const isGroupChat = target.startsWith("wr");
+
+    const body = JSON.stringify({
+      ...(isGroupChat ? { chatid: target } : { touser: target }),
+      msgtype: "news",
+      agentid: this.config.agentId,
+      news: {
+        articles: articles.slice(0, 8).map((a) => ({
+          title: a.title,
+          description: a.description,
+          url: a.url,
+          picurl: a.picurl,
+          btntxt: a.btntxt,
+        })),
+      },
+    });
+
+    return this.httpPost<WeComSendMessageResponse>(url, body);
+  }
+
+  /**
+   * 发送图文消息 (mpnews，支持用户和群聊)
+   * @param target 目标 ID (用户 ID 或群聊 ID)
+   * @param articles 图文消息文章列表
+   */
+  async sendMpNews(
+    target: string,
+    articles: Array<{
+      title: string;
+      thumb_media_id: string;
+      content: string;
+      author?: string;
+      content_source_url?: string;
+      digest?: string;
+    }>
+  ): Promise<WeComSendMessageResponse> {
+    console.log(`[WeCom API] Sending mpnews to ${target}: ${articles.length} article(s)`);
+    const token = await this.getToken();
+    const url = `https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=${token}`;
+
+    const isGroupChat = target.startsWith("wr");
+
+    const body = JSON.stringify({
+      ...(isGroupChat ? { chatid: target } : { touser: target }),
+      msgtype: "mpnews",
+      agentid: this.config.agentId,
+      mpnews: { articles },
+    });
+
+    return this.httpPost<WeComSendMessageResponse>(url, body);
+  }
+
+  // ============================================
+  // 消息撤回
+  // ============================================
+
+  /**
+   * 撤回应用消息
+   * @param msgid 消息ID (发送消息时返回的 msgid)
+   */
+  async recallMessage(msgid: string): Promise<WeComApiResponse> {
+    console.log(`[WeCom API] Recalling message: ${msgid}`);
+    const token = await this.getToken();
+    const url = `https://qyapi.weixin.qq.com/cgi-bin/message/recall?access_token=${token}`;
+
+    const body = JSON.stringify({ msgid });
+
+    return this.httpPost<WeComApiResponse>(url, body);
   }
 }
