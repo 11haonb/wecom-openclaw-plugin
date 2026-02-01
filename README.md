@@ -1,128 +1,268 @@
-# WeCom OpenClaw Integration
+<p align="center">
+  <img src="https://img.icons8.com/color/96/weixing.png" alt="WeCom Logo" width="80" height="80">
+</p>
+
+<h1 align="center">WeCom OpenClaw Integration</h1>
 
 <p align="center">
   <strong>🤖 Connect your AI agent to WeCom (企业微信)</strong>
 </p>
 
 <p align="center">
-  Send messages via WeCom → AI processes and responds → Control your computer remotely
+  <a href="https://github.com/liujinqi/wecom-openclaw-integration/blob/main/LICENSE">
+    <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
+  </a>
+  <a href="https://www.npmjs.com/package/wecom-openclaw-integration">
+    <img src="https://img.shields.io/npm/v/wecom-openclaw-integration.svg" alt="npm version">
+  </a>
+  <a href="https://github.com/liujinqi/wecom-openclaw-integration/stargazers">
+    <img src="https://img.shields.io/github/stars/liujinqi/wecom-openclaw-integration.svg" alt="GitHub stars">
+  </a>
+  <a href="https://github.com/liujinqi/wecom-openclaw-integration/issues">
+    <img src="https://img.shields.io/github/issues/liujinqi/wecom-openclaw-integration.svg" alt="GitHub issues">
+  </a>
 </p>
 
 <p align="center">
-  <a href="#quick-start">Quick Start</a> •
-  <a href="#features">Features</a> •
-  <a href="#configuration">Configuration</a> •
-  <a href="#remote-browser-control">Browser Control</a> •
-  <a href="#api-reference">API Reference</a>
+  <a href="#-quick-start">Quick Start</a> •
+  <a href="#-features">Features</a> •
+  <a href="#-remote-browser-control">Browser Control</a> •
+  <a href="#-documentation">Docs</a> •
+  <a href="./docs/QUICKSTART_CN.md">中文文档</a>
 </p>
 
 ---
 
-## What is this?
+## 📖 What is this?
 
-This plugin connects [OpenClaw](https://github.com/openclaw/openclaw) AI agent to WeCom (企业微信/WeChat Work).
+This plugin connects [OpenClaw](https://github.com/openclaw/openclaw) AI agent to **WeCom (企业微信/WeChat Work)**.
 
-**Use cases:**
-- 💬 Chat with AI assistant via WeCom
-- 🖥️ Control your computer's browser remotely from your phone
-- 📁 Send/receive files, images, voice messages
-- 🤖 Automate tasks with AI tool calling
+<table>
+  <tr>
+    <td align="center">💬</td>
+    <td><strong>Chat with AI</strong><br/>Send messages via WeCom, get AI-powered responses</td>
+  </tr>
+  <tr>
+    <td align="center">🖥️</td>
+    <td><strong>Remote Browser Control</strong><br/>Control your PC's browser from your phone</td>
+  </tr>
+  <tr>
+    <td align="center">📁</td>
+    <td><strong>Rich Media</strong><br/>Send/receive images, voice, video, files</td>
+  </tr>
+  <tr>
+    <td align="center">🔧</td>
+    <td><strong>Tool Calling</strong><br/>AI can execute tasks with 100+ built-in tools</td>
+  </tr>
+</table>
 
 ---
 
-## Quick Start
+## ⚡ Quick Start
 
-### Step 1: Get WeCom Credentials
+### 1️⃣ Get WeCom Credentials
 
-1. Log in to [WeCom Admin Console](https://work.weixin.qq.com/)
-2. Go to **App Management** → **Create App** (or use existing)
-3. Note down these values:
-   - **Corp ID** (企业ID) - Found in "My Enterprise"
-   - **Agent ID** (应用ID) - Found in app details
-   - **Secret** (应用Secret) - Found in app details
-4. In app settings → **Receive Messages**:
-   - Generate **Token** and **EncodingAESKey**
-   - Set callback URL: `http://YOUR_SERVER:18789/wecom/callback`
+| Field | Where to Find |
+|:------|:--------------|
+| **Corp ID** | WeCom Admin → My Enterprise → Enterprise ID |
+| **Agent ID** | App Management → Your App → Agent ID |
+| **Secret** | App Management → Your App → Secret |
+| **Token** | Your App → Receive Messages → Generate |
+| **AES Key** | Your App → Receive Messages → Generate |
 
-### Step 2: Configure OpenClaw
+### 2️⃣ Configure OpenClaw
 
-Create or edit `~/.openclaw/openclaw.json`:
+Create `~/.openclaw/openclaw.json`:
 
 ```json
 {
   "env": {
-    "WECOM_CORP_ID": "your-corp-id",
+    "WECOM_CORP_ID": "ww1234567890abcdef",
     "WECOM_CORP_SECRET": "your-app-secret",
     "WECOM_AGENT_ID": "1000001",
     "WECOM_CALLBACK_TOKEN": "your-token",
-    "WECOM_CALLBACK_AES_KEY": "your-43-char-aes-key"
+    "WECOM_CALLBACK_AES_KEY": "your-43-character-aes-key"
   },
   "plugins": {
     "entries": {
-      "wecom": {
-        "enabled": true
-      }
+      "wecom": { "enabled": true }
     }
   }
 }
 ```
 
-### Step 3: Start the Gateway
+### 3️⃣ Start Gateway
 
 ```bash
 cd /path/to/openclaw
-pnpm build
-node dist/entry.js gateway
+pnpm build && node dist/entry.js gateway
 ```
 
-### Step 4: Test It
+### 4️⃣ Set Callback URL
 
-Open WeCom app on your phone → Find your app → Send a message!
+In WeCom Admin → Your App → Receive Messages:
 
----
+```
+URL: http://YOUR_SERVER:18789/wecom/callback
+```
 
-## Features
+### 5️⃣ Test It! 🎉
 
-| Feature | Status | Description |
-|---------|--------|-------------|
-| Text Messages | ✅ | Send and receive text |
-| Image Messages | ✅ | Send and receive images |
-| Voice Messages | ✅ | Send and receive voice (AMR format) |
-| Video Messages | ✅ | Send and receive videos |
-| File Messages | ✅ | Send and receive files |
-| Group Chat | ✅ | Support group messages with @mention |
-| Message Cards | ✅ | Rich text cards, news articles |
-| Remote Browser | ✅ | Control browser on your PC via phone |
-| Multi-Account | ✅ | Run multiple WeCom apps |
-| Event Handling | ✅ | Handle subscribe, menu clicks, etc. |
-| Mini Programs | ✅ | Send mini program cards |
+Open WeCom app → Find your app → Send "Hello"!
 
 ---
 
-## Configuration
+## ✨ Features
 
-### Basic Configuration
+<table>
+  <thead>
+    <tr>
+      <th>Category</th>
+      <th>Feature</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td rowspan="6"><strong>📨 Messaging</strong></td>
+      <td>Text messages</td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td>Image messages</td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td>Voice messages</td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td>Video messages</td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td>File messages</td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td>Message cards</td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td rowspan="3"><strong>👥 Group Chat</strong></td>
+      <td>Group messages</td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td>@mention detection</td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td>Access control</td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td rowspan="2"><strong>🖥️ Browser</strong></td>
+      <td>Remote control</td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td>Screenshot capture</td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td rowspan="3"><strong>⚙️ Advanced</strong></td>
+      <td>Multi-account</td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td>Event handling</td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td>Mini programs</td>
+      <td>✅</td>
+    </tr>
+  </tbody>
+</table>
 
-| Environment Variable | Required | Description |
-|---------------------|----------|-------------|
-| `WECOM_CORP_ID` | ✅ | Your enterprise ID |
+---
+
+## 🖥️ Remote Browser Control
+
+**Control your computer's browser from your phone!**
+
+```
+┌──────────────┐      ┌──────────────┐      ┌──────────────┐
+│  📱 Phone    │      │  🖥️ Server   │      │  💻 Your PC  │
+│    WeCom     │ ───▶ │   OpenClaw   │ ───▶ │   Browser    │
+└──────────────┘      └──────────────┘      └──────────────┘
+```
+
+### Setup
+
+<details>
+<summary><strong>1. Configure Server</strong></summary>
+
+Add to `~/.openclaw/openclaw.json`:
+
+```json
+{
+  "browser": { "enabled": true },
+  "gateway": {
+    "nodes": {
+      "browser": { "mode": "auto" }
+    }
+  }
+}
+```
+
+</details>
+
+<details>
+<summary><strong>2. Install Node Host on Your PC</strong></summary>
+
+```bash
+npm install -g openclaw
+openclaw node-host --gateway-host YOUR_SERVER_IP --gateway-port 18789
+```
+
+</details>
+
+<details>
+<summary><strong>3. Send Commands via WeCom</strong></summary>
+
+| Command | Action |
+|:--------|:-------|
+| `打开浏览器访问淘宝` | Open browser, go to taobao.com |
+| `搜索 iPhone 16` | Search on current page |
+| `截图` | Take screenshot |
+| `点击第一个商品` | Click first product |
+
+</details>
+
+📖 **[Full Browser Control Guide →](./docs/BROWSER_CONTROL.md)**
+
+---
+
+## ⚙️ Configuration
+
+### Environment Variables
+
+| Variable | Required | Description |
+|:---------|:--------:|:------------|
+| `WECOM_CORP_ID` | ✅ | Enterprise ID |
 | `WECOM_CORP_SECRET` | ✅ | App secret |
 | `WECOM_AGENT_ID` | ✅ | App agent ID |
-| `WECOM_CALLBACK_TOKEN` | ✅ | Callback verification token |
-| `WECOM_CALLBACK_AES_KEY` | ✅ | 43-character AES key |
-
-### Optional Configuration
-
-| Environment Variable | Default | Description |
-|---------------------|---------|-------------|
-| `WECOM_CALLBACK_PORT` | `8080` | Callback server port |
-| `WECOM_CALLBACK_PATH` | `/wecom/callback` | Callback URL path |
-| `WECOM_BOT_NAME` | `助手` | Bot name for @mention detection |
-| `WECOM_BOT_ALIASES` | `机器人,AI,Bot` | Alternative names (comma-separated) |
-| `WECOM_GROUP_REQUIRE_MENTION` | `true` | Require @mention in groups |
-| `WECOM_WELCOME_MESSAGE` | - | Auto-reply when user subscribes |
+| `WECOM_CALLBACK_TOKEN` | ✅ | Callback token |
+| `WECOM_CALLBACK_AES_KEY` | ✅ | 43-char AES key |
+| `WECOM_BOT_NAME` | | Bot name for @mention |
+| `WECOM_WELCOME_MESSAGE` | | Auto-reply for new users |
 
 ### Full Example
+
+<details>
+<summary><strong>Click to expand</strong></summary>
 
 ```json
 {
@@ -133,7 +273,7 @@ Open WeCom app on your phone → Find your app → Send a message!
     "WECOM_AGENT_ID": "1000001",
     "WECOM_CALLBACK_TOKEN": "your-token",
     "WECOM_CALLBACK_AES_KEY": "your-43-char-key",
-    "WECOM_BOT_NAME": "小助手",
+    "WECOM_BOT_NAME": "AI助手",
     "WECOM_WELCOME_MESSAGE": "你好！我是AI助手，有什么可以帮你的？"
   },
   "agents": {
@@ -143,9 +283,15 @@ Open WeCom app on your phone → Find your app → Send a message!
       }
     }
   },
+  "browser": {
+    "enabled": true
+  },
   "gateway": {
     "mode": "local",
-    "bind": "lan"
+    "bind": "lan",
+    "nodes": {
+      "browser": { "mode": "auto" }
+    }
   },
   "plugins": {
     "entries": {
@@ -155,170 +301,30 @@ Open WeCom app on your phone → Find your app → Send a message!
 }
 ```
 
----
-
-## Remote Browser Control
-
-**Control your computer's browser from your phone via WeCom!**
-
-```
-┌──────────────┐      ┌──────────────┐      ┌──────────────┐
-│  📱 WeCom    │ ───▶ │  🖥️ Server   │ ───▶ │  💻 Your PC  │
-│  (Phone)     │ ◀─── │  (OpenClaw)  │ ◀─── │  (Browser)   │
-└──────────────┘      └──────────────┘      └──────────────┘
-```
-
-### Setup
-
-**1. On your PC (Windows/Mac):**
-
-```bash
-# Install OpenClaw
-npm install -g openclaw
-
-# Connect to your server
-openclaw node-host --gateway-host YOUR_SERVER_IP --gateway-port 18789
-```
-
-**2. On your server, add to config:**
-
-```json
-{
-  "browser": {
-    "enabled": true
-  },
-  "gateway": {
-    "nodes": {
-      "browser": {
-        "mode": "auto"
-      }
-    }
-  }
-}
-```
-
-**3. Send commands via WeCom:**
-
-| Command Example | What it does |
-|-----------------|--------------|
-| "打开浏览器访问淘宝" | Opens browser, navigates to taobao.com |
-| "搜索 iPhone 16" | Types and searches on current page |
-| "截图" | Takes screenshot and sends to you |
-| "点击第一个商品" | Clicks the first product |
-| "帮我登录京东" | AI helps you log in |
-
-### Supported Actions
-
-| Action | Description |
-|--------|-------------|
-| `start` | Launch browser |
-| `stop` | Close browser |
-| `navigate` | Go to URL |
-| `screenshot` | Capture screen |
-| `click` | Click element |
-| `type` | Type text |
-| `fill` | Fill form field |
-| `scroll` | Scroll page |
-| `tabs` | List open tabs |
+</details>
 
 ---
 
-## Group Chat
+## 👥 Group Chat
 
-### How it works
+| Mode | Behavior |
+|:-----|:---------|
+| **Private Chat** | Bot responds to all messages |
+| **Group Chat** | Bot only responds when @mentioned |
 
-- **Private chat**: Bot responds to all messages
-- **Group chat**: Bot only responds when @mentioned (configurable)
-
-### Configuration
+Configure @mention names:
 
 ```bash
-# Require @mention in groups (default: true)
-WECOM_GROUP_REQUIRE_MENTION=true
-
-# Bot names for @mention detection
 WECOM_BOT_NAME=小助手
 WECOM_BOT_ALIASES=AI,机器人,助手
 ```
 
-### Usage
-
-In group chat, mention the bot:
-```
-@小助手 今天天气怎么样？
-```
-
 ---
 
-## Multi-Account Support
+## 🔌 API Reference
 
-Run multiple WeCom apps simultaneously:
-
-```bash
-export WECOM_ACCOUNTS='[
-  {
-    "id": "customer-service",
-    "name": "Customer Service Bot",
-    "corpId": "ww123",
-    "corpSecret": "secret1",
-    "agentId": 1000001,
-    "callbackToken": "token1",
-    "callbackAesKey": "key1"
-  },
-  {
-    "id": "internal-bot",
-    "name": "Internal Assistant",
-    "corpId": "ww123",
-    "corpSecret": "secret2",
-    "agentId": 1000002,
-    "callbackToken": "token2",
-    "callbackAesKey": "key2"
-  }
-]'
-```
-
----
-
-## Event Handling
-
-Handle WeCom events programmatically:
-
-```typescript
-import { onEvent, setWelcomeMessage } from "wecom-openclaw-integration";
-
-// Welcome new users
-setWelcomeMessage("Welcome! How can I help you?");
-
-// Custom event handlers
-onEvent("subscribe", async (event, config) => {
-  console.log(`New user: ${event.fromUserName}`);
-});
-
-onEvent("click", async (event, config) => {
-  // Handle menu button clicks
-  if (event.eventKey === "help") {
-    // Send help message
-  }
-});
-```
-
-### Supported Events
-
-| Event | Trigger |
-|-------|---------|
-| `subscribe` | User follows the app |
-| `unsubscribe` | User unfollows |
-| `enter_agent` | User opens the app |
-| `click` | Menu button clicked |
-| `view` | Menu link clicked |
-| `scancode_push` | QR code scanned |
-| `location_select` | Location selected |
-
----
-
-## API Reference
-
-### WeComApiClient
+<details>
+<summary><strong>WeComApiClient</strong></summary>
 
 ```typescript
 import { WeComApiClient } from "wecom-openclaw-integration";
@@ -341,12 +347,36 @@ await client.sendFileFile("userid", "/path/to/file.pdf");
 // Send card
 await client.sendTextCard("userid", {
   title: "Card Title",
-  description: "Card description",
+  description: "Description",
   url: "https://example.com",
 });
 ```
 
-### Mini Program
+</details>
+
+<details>
+<summary><strong>Event Handling</strong></summary>
+
+```typescript
+import { onEvent, setWelcomeMessage } from "wecom-openclaw-integration";
+
+// Welcome new users
+setWelcomeMessage("Welcome! How can I help?");
+
+// Handle events
+onEvent("subscribe", async (event, config) => {
+  console.log(`New user: ${event.fromUserName}`);
+});
+
+onEvent("click", async (event, config) => {
+  // Handle menu clicks
+});
+```
+
+</details>
+
+<details>
+<summary><strong>Mini Programs</strong></summary>
 
 ```typescript
 import { createMiniProgramClient } from "wecom-openclaw-integration";
@@ -360,81 +390,123 @@ await mpClient.sendSimpleMiniProgramCard("userid", {
 });
 ```
 
+</details>
+
 ---
 
-## Model Recommendations
+## 🤖 Recommended Models
 
-### For users in China (no proxy needed):
-- `openrouter/qwen/qwen3-max` ⭐ Recommended
-- `openrouter/qwen/qwen-2.5-72b-instruct`
-- `openrouter/deepseek/deepseek-chat`
+| Region | Model | Notes |
+|:-------|:------|:------|
+| 🇨🇳 China | `openrouter/qwen/qwen3-max` | ⭐ Recommended, no proxy |
+| 🇨🇳 China | `openrouter/deepseek/deepseek-chat` | Fast, cheap |
+| 🌍 Global | `openrouter/anthropic/claude-sonnet-4` | Best quality |
+| 🌍 Global | `openrouter/openai/gpt-4o` | Good balance |
 
-### For users with proxy:
-- `openrouter/anthropic/claude-sonnet-4`
-- `openrouter/openai/gpt-4o`
-
-### Using proxy:
+**Using proxy:**
 ```bash
 HTTPS_PROXY=http://127.0.0.1:7890 node dist/entry.js gateway
 ```
 
 ---
 
-## File Structure
+## 📁 Project Structure
 
 ```
 wecom-openclaw-integration/
-├── src/
-│   ├── api.ts           # WeCom API client
-│   ├── crypto.ts        # Message encryption (AES-256-CBC)
-│   ├── parser.ts        # XML message parser
-│   ├── monitor.ts       # Webhook handler
-│   ├── channel.ts       # OpenClaw channel definition
-│   ├── types.ts         # TypeScript types
-│   ├── group-policy.ts  # Group chat policies
-│   ├── mention.ts       # @mention detection
-│   ├── quote.ts         # Reply formatting
-│   ├── multi-account.ts # Multi-account support
-│   ├── events.ts        # Event handling
-│   └── miniprogram.ts   # Mini program integration
-├── test/                # Test files
-├── index.ts             # Plugin entry point
-├── package.json
-└── README.md
+├── 📄 index.ts             # Plugin entry point
+├── 📁 src/
+│   ├── api.ts              # WeCom API client
+│   ├── crypto.ts           # AES encryption
+│   ├── parser.ts           # XML parser
+│   ├── monitor.ts          # Webhook handler
+│   ├── channel.ts          # Channel definition
+│   ├── types.ts            # TypeScript types
+│   ├── group-policy.ts     # Group chat rules
+│   ├── mention.ts          # @mention detection
+│   ├── multi-account.ts    # Multi-account support
+│   ├── events.ts           # Event handlers
+│   └── miniprogram.ts      # Mini program support
+├── 📁 docs/
+│   ├── QUICKSTART_CN.md    # 中文快速入门
+│   └── BROWSER_CONTROL.md  # Browser control guide
+├── 📁 test/                # Test files
+├── 📄 CHANGELOG.md         # Version history
+└── 📄 README.md            # This file
 ```
 
 ---
 
-## Troubleshooting
+## 📖 Documentation
 
-### Callback URL verification failed
-
-- Check Token and EncodingAESKey match exactly
-- Ensure server is accessible from internet
-- Check firewall allows port 18789
-
-### Messages not received
-
-- Verify callback URL is correctly set in WeCom admin
-- Check server logs: `tail -f /tmp/gateway.log`
-- Ensure plugin is enabled in config
-
-### Browser control not working
-
-- Verify Node Host is connected: check server logs
-- Ensure `browser.enabled: true` in config
-- Check `gateway.nodes.browser.mode: "auto"`
+| Document | Description |
+|:---------|:------------|
+| [Quick Start (中文)](./docs/QUICKSTART_CN.md) | 5 分钟快速入门 |
+| [Browser Control](./docs/BROWSER_CONTROL.md) | Remote browser setup |
+| [Changelog](./CHANGELOG.md) | Version history |
 
 ---
 
-## License
+## 🐛 Troubleshooting
 
-MIT
+<details>
+<summary><strong>Callback URL verification failed</strong></summary>
+
+- ✅ Check Token and AES Key match exactly
+- ✅ Ensure server is accessible from internet
+- ✅ Check firewall allows port 18789
+
+</details>
+
+<details>
+<summary><strong>Messages not received</strong></summary>
+
+- ✅ Verify callback URL in WeCom admin
+- ✅ Check logs: `tail -f /tmp/gateway.log`
+- ✅ Ensure plugin is enabled
+
+</details>
+
+<details>
+<summary><strong>Browser control not working</strong></summary>
+
+- ✅ Verify Node Host is connected
+- ✅ Check `browser.enabled: true`
+- ✅ Check `gateway.nodes.browser.mode: "auto"`
+
+</details>
 
 ---
 
-## Links
+## 🤝 Contributing
 
-- [OpenClaw](https://github.com/openclaw/openclaw)
-- [WeCom Developer Docs](https://developer.work.weixin.qq.com/document/)
-- [Report Issues](https://github.com/liujinqi/wecom-openclaw-integration/issues)
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🔗 Links
+
+<p align="center">
+  <a href="https://github.com/openclaw/openclaw">OpenClaw</a> •
+  <a href="https://developer.work.weixin.qq.com/document/">WeCom Docs</a> •
+  <a href="https://github.com/liujinqi/wecom-openclaw-integration/issues">Report Bug</a> •
+  <a href="https://github.com/liujinqi/wecom-openclaw-integration/issues">Request Feature</a>
+</p>
+
+---
+
+<p align="center">
+  Made with ❤️ by <a href="https://github.com/liujinqi">liujinqi</a>
+</p>
