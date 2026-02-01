@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <em>For <a href="https://github.com/openclaw/openclaw">OpenClaw</a> (formerly known as Moltbot, originally Clawdbot)</em>
+  <em>For <a href="https://github.com/openclaw/openclaw">OpenClaw</a> (formerly known as Moltbot or originally Clawdbot)</em>
 </p>
 
 <p align="center">
