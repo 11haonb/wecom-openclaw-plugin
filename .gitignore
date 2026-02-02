@@ -18,6 +18,7 @@ Thumbs.db
 # Environment
 .env
 .env.*
+!.env.*.example
 
 # Test coverage
 coverage/

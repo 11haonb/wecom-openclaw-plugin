@@ -446,8 +446,10 @@ wecom-openclaw-integration/
 
 | Document | Description |
 |:---------|:------------|
+| [Quick Start (English)](./docs/QUICKSTART_EN.md) | 5-minute setup guide |
 | [Quick Start (中文)](./docs/QUICKSTART_CN.md) | 5 分钟快速入门 |
-| [Browser Control](./docs/BROWSER_CONTROL.md) | Remote browser setup |
+| [Remote Control (English)](./docs/REMOTE_CONTROL_EN.md) | Control Windows PC remotely |
+| [Remote Control (中文)](./docs/REMOTE_CONTROL_CN.md) | 远程控制 Windows 电脑 |
 | [Changelog](./CHANGELOG.md) | Version history |
 
 ---
