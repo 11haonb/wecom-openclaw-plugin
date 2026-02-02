@@ -1,0 +1,299 @@
+---
+title: '环境变量配置'
+description: '所有可用的环境变量和配置选项'
+---
+
+## 概述
+
+WeCom OpenClaw Plugin 支持通过环境变量或配置文件进行配置。推荐使用配置文件 `~/.openclaw/openclaw.json`。
+
+---
+
+## 企业微信凭证
+
+这些是必需的配置项，用于连接企业微信 API。
+
+| 环境变量 | 配置文件路径 | 说明 | 必需 |
+|---------|-------------|------|------|
+| `WECOM_CORP_ID` | `env.WECOM_CORP_ID` | 企业 ID | ✅ |
+| `WECOM_CORP_SECRET` | `env.WECOM_CORP_SECRET` | 应用 Secret | ✅ |
+| `WECOM_AGENT_ID` | `env.WECOM_AGENT_ID` | 应用 Agent ID | ✅ |
+| `WECOM_CALLBACK_TOKEN` | `env.WECOM_CALLBACK_TOKEN` | 回调验证 Token | ✅ |
+| `WECOM_CALLBACK_AES_KEY` | `env.WECOM_CALLBACK_AES_KEY` | 消息加密密钥 | ✅ |
+
+### 配置示例
+
+<CodeGroup>
+
+```json 配置文件
+{
+  "env": {
+    "WECOM_CORP_ID": "ww1234567890abcdef",
+    "WECOM_CORP_SECRET": "your_secret_here",
+    "WECOM_AGENT_ID": "1000001",
+    "WECOM_CALLBACK_TOKEN": "your_token_here",
+    "WECOM_CALLBACK_AES_KEY": "your_aes_key_here_43_characters_long"
+  }
+}
+```
+
+```bash 环境变量
+export WECOM_CORP_ID=ww1234567890abcdef
+export WECOM_CORP_SECRET=your_secret_here
+export WECOM_AGENT_ID=1000001
+export WECOM_CALLBACK_TOKEN=your_token_here
+export WECOM_CALLBACK_AES_KEY=your_aes_key_here_43_characters_long
+```
+
+</CodeGroup>
+
+---
+
+## AI 模型配置
+
+配置 AI 模型提供商和模型选择。
+
+| 环境变量 | 说明 | 示例 |
+|---------|------|------|
+| `OPENROUTER_API_KEY` | OpenRouter API 密钥 | `sk-or-v1-xxx` |
+| `OPENAI_API_KEY` | OpenAI API 密钥 | `sk-xxx` |
+| `ANTHROPIC_API_KEY` | Anthropic API 密钥 | `sk-ant-xxx` |
+| `DASHSCOPE_API_KEY` | 阿里云 DashScope 密钥 | `sk-xxx` |
+
+### 模型选择
+
+```json
+{
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "openrouter/qwen/qwen3-max"
+      }
+    }
+  }
+}
+```
+
+### 支持的模型
+
+<Tabs>
+  <Tab title="OpenRouter">
+    - `openrouter/qwen/qwen3-max` - 通义千问 (推荐)
+    - `openrouter/anthropic/claude-3.5-sonnet` - Claude 3.5
+    - `openrouter/openai/gpt-4o` - GPT-4o
+    - `openrouter/google/gemini-pro` - Gemini Pro
+  </Tab>
+  <Tab title="OpenAI">
+    - `openai/gpt-4o` - GPT-4o
+    - `openai/gpt-4o-mini` - GPT-4o Mini
+    - `openai/gpt-4-turbo` - GPT-4 Turbo
+  </Tab>
+  <Tab title="Anthropic">
+    - `anthropic/claude-3.5-sonnet` - Claude 3.5 Sonnet
+    - `anthropic/claude-3-opus` - Claude 3 Opus
+  </Tab>
+  <Tab title="阿里云">
+    - `dashscope/qwen-max` - 通义千问 Max
+    - `dashscope/qwen-plus` - 通义千问 Plus
+    - `dashscope/qwen-turbo` - 通义千问 Turbo
+  </Tab>
+</Tabs>
+
+---
+
+## Gateway 配置
+
+配置 Gateway 服务器行为。
+
+```json
+{
+  "gateway": {
+    "mode": "local",
+    "bind": "lan",
+    "port": 18789
+  }
+}
+```
+
+| 配置项 | 说明 | 默认值 | 可选值 |
+|-------|------|--------|--------|
+| `mode` | 运行模式 | `local` | `local`, `cloud` |
+| `bind` | 绑定地址 | `loopback` | `loopback`, `lan`, `all` |
+| `port` | 监听端口 | `18789` | 任意可用端口 |
+
+### bind 选项说明
+
+| 值 | 绑定地址 | 说明 |
+|---|---------|------|
+| `loopback` | `127.0.0.1` | 只允许本机访问 |
+| `lan` | `0.0.0.0` (内网) | 允许内网访问 |
+| `all` | `0.0.0.0` | 允许所有访问 |
+
+<Warning>
+  生产环境建议使用 `lan`，不要使用 `all`。
+</Warning>
+
+---
+
+## 插件配置
+
+配置 WeCom 插件的行为。
+
+```json
+{
+  "plugins": {
+    "entries": {
+      "wecom": {
+        "enabled": true,
+        "callbackPath": "/wecom/callback",
+        "groupChat": {
+          "enabled": true,
+          "requireMention": true
+        }
+      }
+    }
+  }
+}
+```
+
+| 配置项 | 说明 | 默认值 |
+|-------|------|--------|
+| `enabled` | 是否启用插件 | `true` |
+| `callbackPath` | 回调 URL 路径 | `/wecom/callback` |
+| `groupChat.enabled` | 是否启用群聊 | `false` |
+| `groupChat.requireMention` | 是否需要 @提及 | `true` |
+
+---
+
+## 节点配置
+
+配置远程节点连接。
+
+```json
+{
+  "gateway": {
+    "nodes": {
+      "browser": {
+        "mode": "auto",
+        "node": "my-windows-pc"
+      }
+    }
+  }
+}
+```
+
+### Gateway Token
+
+用于节点认证的 Token：
+
+```bash
+export OPENCLAW_GATEWAY_TOKEN=your_secret_token
+```
+
+<Warning>
+  请使用强密码作为 Token，至少 32 位随机字符。
+</Warning>
+
+---
+
+## 代理配置
+
+如果服务器需要通过代理访问外网：
+
+```bash
+export HTTP_PROXY=http://127.0.0.1:7890
+export HTTPS_PROXY=http://127.0.0.1:7890
+```
+
+或在启动时指定：
+
+```bash
+HTTPS_PROXY=http://127.0.0.1:7890 openclaw gateway run
+```
+
+---
+
+## 日志配置
+
+| 环境变量 | 说明 | 默认值 |
+|---------|------|--------|
+| `LOG_LEVEL` | 日志级别 | `info` |
+| `LOG_FILE` | 日志文件路径 | `/tmp/gateway.log` |
+
+### 日志级别
+
+| 级别 | 说明 |
+|------|------|
+| `debug` | 详细调试信息 |
+| `info` | 一般信息（默认） |
+| `warn` | 警告信息 |
+| `error` | 错误信息 |
+
+---
+
+## 完整配置示例
+
+```json
+{
+  "env": {
+    "OPENROUTER_API_KEY": "sk-or-v1-xxx",
+    "WECOM_CORP_ID": "ww1234567890abcdef",
+    "WECOM_CORP_SECRET": "your_secret_here",
+    "WECOM_AGENT_ID": "1000001",
+    "WECOM_CALLBACK_TOKEN": "your_token_here",
+    "WECOM_CALLBACK_AES_KEY": "your_aes_key_here_43_characters"
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "openrouter/qwen/qwen3-max"
+      }
+    }
+  },
+  "gateway": {
+    "mode": "local",
+    "bind": "lan",
+    "port": 18789,
+    "nodes": {
+      "browser": {
+        "mode": "auto",
+        "node": "my-windows-pc"
+      }
+    }
+  },
+  "plugins": {
+    "entries": {
+      "wecom": {
+        "enabled": true,
+        "callbackPath": "/wecom/callback",
+        "groupChat": {
+          "enabled": true,
+          "requireMention": true,
+          "allowedGroups": ["tech_team"]
+        }
+      }
+    }
+  }
+}
+```
+
+---
+
+## 下一步
+
+<CardGroup cols={2}>
+  <Card
+    title="Gateway 配置"
+    icon="server"
+    href="/configuration/gateway"
+  >
+    了解更多 Gateway 配置选项
+  </Card>
+  <Card
+    title="安全配置"
+    icon="shield"
+    href="/configuration/security"
+  >
+    了解安全最佳实践
+  </Card>
+</CardGroup>

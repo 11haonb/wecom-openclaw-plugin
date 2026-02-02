@@ -1,0 +1,272 @@
+---
+title: '群聊支持'
+description: '在企业微信群中 @AI 助手进行对话'
+---
+
+## 功能概述
+
+WeCom OpenClaw Plugin 支持在企业微信群聊中使用 AI 助手。通过 @提及 机器人，团队成员可以共同与 AI 协作。
+
+<CardGroup cols={2}>
+  <Card title="@提及触发" icon="at">
+    在群聊中 @AI助手 即可触发对话
+  </Card>
+  <Card title="上下文共享" icon="comments">
+    群内成员共享对话上下文
+  </Card>
+  <Card title="权限控制" icon="lock">
+    可配置哪些群可以使用
+  </Card>
+  <Card title="多群支持" icon="users-rectangle">
+    支持同时在多个群中使用
+  </Card>
+</CardGroup>
+
+---
+
+## 配置步骤
+
+### 第一步：启用群聊功能
+
+编辑 `~/.openclaw/openclaw.json`：
+
+```json
+{
+  "plugins": {
+    "entries": {
+      "wecom": {
+        "enabled": true,
+        "groupChat": {
+          "enabled": true,
+          "requireMention": true
+        }
+      }
+    }
+  }
+}
+```
+
+### 第二步：配置应用可见范围
+
+在企业微信管理后台：
+
+1. 进入 **应用管理** → 找到你的 AI 助手应用
+2. 点击 **可见范围** → 添加需要使用的部门或群聊
+3. 保存设置
+
+### 第三步：将机器人添加到群聊
+
+1. 打开企业微信 APP
+2. 进入目标群聊
+3. 点击群设置 → **添加群成员**
+4. 搜索并添加 AI 助手应用
+
+---
+
+## 使用方式
+
+### 基本对话
+
+在群聊中 @AI助手 并输入问题：
+
+```
+@AI助手 今天天气怎么样？
+```
+
+### 连续对话
+
+AI 会记住群聊的上下文，可以进行连续对话：
+
+```
+用户A: @AI助手 帮我写一个 Python 函数计算斐波那契数列
+AI助手: 好的，这是一个计算斐波那契数列的函数...
+
+用户B: @AI助手 能改成递归版本吗？
+AI助手: 当然，这是递归版本...
+```
+
+### 远程控制
+
+在群聊中也可以使用远程控制功能：
+
+```
+@AI助手 打开我的电脑上的 VSCode
+```
+
+---
+
+## 配置选项
+
+### groupChat.enabled
+
+是否启用群聊功能。
+
+| 值 | 说明 |
+|---|------|
+| `true` | 启用群聊 |
+| `false` | 禁用群聊（默认） |
+
+### groupChat.requireMention
+
+是否需要 @提及 才响应。
+
+| 值 | 说明 |
+|---|------|
+| `true` | 必须 @AI助手 才响应（推荐） |
+| `false` | 所有消息都响应（可能产生大量回复） |
+
+### groupChat.allowedGroups
+
+限制可以使用的群聊列表。
+
+```json
+{
+  "groupChat": {
+    "allowedGroups": [
+      "group_id_1",
+      "group_id_2"
+    ]
+  }
+}
+```
+
+<Tip>
+  如果不设置 `allowedGroups`，则所有群聊都可以使用。
+</Tip>
+
+### groupChat.adminOnly
+
+是否只有管理员可以使用。
+
+```json
+{
+  "groupChat": {
+    "adminOnly": true
+  }
+}
+```
+
+---
+
+## 完整配置示例
+
+```json
+{
+  "plugins": {
+    "entries": {
+      "wecom": {
+        "enabled": true,
+        "groupChat": {
+          "enabled": true,
+          "requireMention": true,
+          "allowedGroups": ["tech_team", "product_team"],
+          "adminOnly": false,
+          "maxContextMessages": 50,
+          "sessionTimeout": 3600
+        }
+      }
+    }
+  }
+}
+```
+
+---
+
+## 会话管理
+
+### 独立会话
+
+每个群聊有独立的会话上下文，不同群之间互不影响。
+
+### 重置会话
+
+在群聊中发送以下命令重置会话：
+
+```
+@AI助手 /new
+```
+
+### 会话超时
+
+默认情况下，群聊会话在 1 小时无活动后自动重置。可通过 `sessionTimeout` 配置（单位：秒）。
+
+---
+
+## 常见问题
+
+<AccordionGroup>
+  <Accordion title="机器人不响应群消息">
+    **检查项**：
+    1. 确认 `groupChat.enabled` 设置为 `true`
+    2. 确认机器人已添加到群聊
+    3. 如果设置了 `requireMention: true`，确保消息中 @了机器人
+    4. 检查 `allowedGroups` 是否包含当前群
+  </Accordion>
+
+  <Accordion title="如何获取群聊 ID">
+    群聊 ID 可以在 Gateway 日志中找到：
+
+    ```bash
+    tail -f /tmp/gateway.log | grep "group"
+    ```
+
+    当群聊收到消息时，日志会显示群聊 ID。
+  </Accordion>
+
+  <Accordion title="群聊消息响应很慢">
+    **可能原因**：
+    1. AI 模型响应慢
+    2. 上下文过长
+
+    **解决方案**：
+    1. 使用更快的模型（如 Qwen-turbo）
+    2. 减少 `maxContextMessages` 值
+    3. 定期使用 `/new` 重置会话
+  </Accordion>
+
+  <Accordion title="如何限制某些用户使用">
+    目前支持通过 `adminOnly` 限制只有群管理员可以使用。
+
+    更细粒度的用户权限控制正在开发中。
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## 最佳实践
+
+<CardGroup cols={2}>
+  <Card title="启用 @提及" icon="at">
+    建议启用 `requireMention`，避免机器人响应所有消息
+  </Card>
+  <Card title="限制群聊范围" icon="filter">
+    使用 `allowedGroups` 限制可用群聊，避免滥用
+  </Card>
+  <Card title="定期重置会话" icon="rotate">
+    长对话后使用 `/new` 重置，保持响应速度
+  </Card>
+  <Card title="设置合理超时" icon="clock">
+    根据使用频率设置 `sessionTimeout`
+  </Card>
+</CardGroup>
+
+---
+
+## 下一步
+
+<CardGroup cols={2}>
+  <Card
+    title="环境变量配置"
+    icon="gear"
+    href="/configuration/environment"
+  >
+    了解所有可用的配置选项
+  </Card>
+  <Card
+    title="安全配置"
+    icon="shield"
+    href="/configuration/security"
+  >
+    了解安全最佳实践
+  </Card>
+</CardGroup>

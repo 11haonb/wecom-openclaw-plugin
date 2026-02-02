@@ -1,0 +1,313 @@
+---
+title: 'Gateway 配置'
+description: '详细的 Gateway 服务器配置指南'
+---
+
+## 概述
+
+Gateway 是 OpenClaw 的核心服务，负责处理企业微信回调、AI 对话和节点管理。
+
+---
+
+## 启动方式
+
+### 基本启动
+
+```bash
+openclaw gateway run
+```
+
+### 带参数启动
+
+```bash
+openclaw gateway run --bind lan --port 18789 --force
+```
+
+### 后台运行
+
+```bash
+nohup openclaw gateway run --bind lan --port 18789 > /tmp/gateway.log 2>&1 &
+```
+
+### 使用 systemd
+
+创建服务文件 `/etc/systemd/system/openclaw-gateway.service`：
+
+```ini
+[Unit]
+Description=OpenClaw Gateway
+After=network.target
+
+[Service]
+Type=simple
+User=your_user
+WorkingDirectory=/home/your_user
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/openclaw gateway run --bind lan --port 18789
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+```
+
+启用服务：
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable openclaw-gateway
+sudo systemctl start openclaw-gateway
+```
+
+---
+
+## 命令行参数
+
+| 参数 | 说明 | 默认值 |
+|------|------|--------|
+| `--bind` | 绑定地址模式 | `loopback` |
+| `--port` | 监听端口 | `18789` |
+| `--force` | 强制启动（忽略已运行实例） | `false` |
+| `--config` | 配置文件路径 | `~/.openclaw/openclaw.json` |
+
+### --bind 选项
+
+| 值 | 绑定地址 | 使用场景 |
+|---|---------|---------|
+| `loopback` | `127.0.0.1` | 本地开发 |
+| `lan` | `0.0.0.0` | 内网部署 |
+| `all` | `0.0.0.0` | 公网部署（不推荐） |
+
+---
+
+## 配置文件
+
+### 位置
+
+默认配置文件位置：`~/.openclaw/openclaw.json`
+
+### 结构
+
+```json
+{
+  "gateway": {
+    "mode": "local",
+    "bind": "lan",
+    "port": 18789,
+    "nodes": {}
+  }
+}
+```
+
+### mode 选项
+
+| 值 | 说明 |
+|---|------|
+| `local` | 本地模式，所有数据存储在本地 |
+| `cloud` | 云模式，连接到 OpenClaw 云服务 |
+
+---
+
+## 节点管理
+
+### 配置节点路由
+
+```json
+{
+  "gateway": {
+    "nodes": {
+      "browser": {
+        "mode": "auto",
+        "node": "my-windows-pc"
+      },
+      "default": {
+        "mode": "local"
+      }
+    }
+  }
+}
+```
+
+### 节点路由模式
+
+| 模式 | 说明 |
+|------|------|
+| `local` | 在 Gateway 本地执行 |
+| `auto` | 自动选择可用节点 |
+| `node` | 指定特定节点 |
+
+### 查看节点状态
+
+```bash
+openclaw nodes status
+```
+
+输出示例：
+
+```
+Nodes:
+  my-windows-pc    paired · connected    Windows 10
+  my-macbook       paired · connected    macOS 14.0
+```
+
+---
+
+## 健康检查
+
+### 检查 Gateway 状态
+
+```bash
+openclaw channels status --probe
+```
+
+### 检查端口监听
+
+```bash
+ss -ltnp | grep 18789
+```
+
+### 检查日志
+
+```bash
+tail -f /tmp/gateway.log
+```
+
+---
+
+## 性能调优
+
+### 内存限制
+
+```bash
+NODE_OPTIONS="--max-old-space-size=512" openclaw gateway run
+```
+
+### 并发连接
+
+Gateway 默认支持大量并发连接，通常不需要调整。
+
+### 超时设置
+
+```json
+{
+  "gateway": {
+    "timeout": {
+      "request": 30000,
+      "response": 60000
+    }
+  }
+}
+```
+
+---
+
+## 多实例部署
+
+### 负载均衡
+
+可以部署多个 Gateway 实例，使用 Nginx 进行负载均衡：
+
+```nginx
+upstream openclaw_gateway {
+    server 127.0.0.1:18789;
+    server 127.0.0.1:18790;
+}
+
+server {
+    location /wecom/callback {
+        proxy_pass http://openclaw_gateway;
+    }
+}
+```
+
+<Warning>
+  多实例部署时，需要确保会话状态共享。目前建议使用单实例部署。
+</Warning>
+
+---
+
+## 故障恢复
+
+### 自动重启
+
+使用 systemd 或 PM2 实现自动重启：
+
+```bash
+# PM2
+pm2 start "openclaw gateway run --bind lan" --name gateway
+pm2 save
+pm2 startup
+```
+
+### 日志轮转
+
+配置 logrotate：
+
+```
+/tmp/gateway.log {
+    daily
+    rotate 7
+    compress
+    missingok
+    notifempty
+}
+```
+
+---
+
+## 常见问题
+
+<AccordionGroup>
+  <Accordion title="端口被占用">
+    ```bash
+    # 查找占用端口的进程
+    lsof -i :18789
+
+    # 终止进程
+    kill -9 <PID>
+
+    # 或使用 --force 参数
+    openclaw gateway run --force
+    ```
+  </Accordion>
+
+  <Accordion title="无法绑定到 0.0.0.0">
+    检查是否有权限绑定到所有接口：
+    ```bash
+    sudo setcap 'cap_net_bind_service=+ep' $(which node)
+    ```
+  </Accordion>
+
+  <Accordion title="Gateway 启动后立即退出">
+    检查日志获取错误信息：
+    ```bash
+    openclaw gateway run 2>&1 | head -50
+    ```
+
+    常见原因：
+    - 配置文件格式错误
+    - 缺少必要的环境变量
+    - 端口被占用
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## 下一步
+
+<CardGroup cols={2}>
+  <Card
+    title="安全配置"
+    icon="shield"
+    href="/configuration/security"
+  >
+    了解安全最佳实践
+  </Card>
+  <Card
+    title="故障排除"
+    icon="wrench"
+    href="/troubleshooting/common-issues"
+  >
+    解决常见问题
+  </Card>
+</CardGroup>

@@ -1,0 +1,337 @@
+---
+title: '安全配置'
+description: '安全最佳实践和配置建议'
+---
+
+## 概述
+
+WeCom OpenClaw Plugin 涉及企业微信通信和远程电脑控制，安全配置至关重要。本文档介绍安全最佳实践。
+
+<Warning>
+  请务必认真阅读并遵循本文档的安全建议。
+</Warning>
+
+---
+
+## 凭证安全
+
+### 保护企业微信凭证
+
+<CardGroup cols={2}>
+  <Card title="不要硬编码" icon="code">
+    不要在代码中硬编码凭证，使用环境变量或配置文件
+  </Card>
+  <Card title="限制访问" icon="lock">
+    配置文件权限设置为 600，只有所有者可读写
+  </Card>
+  <Card title="定期轮换" icon="rotate">
+    定期更换 Secret 和 Token
+  </Card>
+  <Card title="不要提交" icon="git">
+    将配置文件加入 .gitignore，不要提交到版本控制
+  </Card>
+</CardGroup>
+
+### 设置文件权限
+
+```bash
+chmod 600 ~/.openclaw/openclaw.json
+```
+
+### 使用 .gitignore
+
+```gitignore
+# OpenClaw 配置
+.openclaw/
+openclaw.json
+.env
+.env.*
+!.env.example
+```
+
+---
+
+## 网络安全
+
+### Gateway 绑定地址
+
+<Tabs>
+  <Tab title="推荐：内网绑定">
+    ```json
+    {
+      "gateway": {
+        "bind": "lan"
+      }
+    }
+    ```
+    只允许内网访问，配合反向代理使用。
+  </Tab>
+  <Tab title="不推荐：公网绑定">
+    ```json
+    {
+      "gateway": {
+        "bind": "all"
+      }
+    }
+    ```
+    ⚠️ 暴露在公网有安全风险。
+  </Tab>
+</Tabs>
+
+### 使用反向代理
+
+推荐使用 Nginx 作为反向代理，添加 SSL 和访问控制：
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name your-domain.com;
+
+    ssl_certificate /path/to/cert.pem;
+    ssl_certificate_key /path/to/key.pem;
+
+    location /wecom/callback {
+        proxy_pass http://127.0.0.1:18789;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+
+        # 只允许企业微信服务器 IP
+        # allow 101.226.0.0/16;
+        # deny all;
+    }
+}
+```
+
+### 防火墙配置
+
+只开放必要的端口：
+
+```bash
+# 只允许企业微信服务器访问 18789 端口
+sudo ufw allow from 101.226.0.0/16 to any port 18789
+
+# 或使用 iptables
+sudo iptables -A INPUT -p tcp -s 101.226.0.0/16 --dport 18789 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 18789 -j DROP
+```
+
+---
+
+## 节点安全
+
+### Gateway Token
+
+使用强密码作为 Gateway Token：
+
+```bash
+# 生成随机 Token
+openssl rand -hex 32
+```
+
+```bash
+# 设置 Token
+export OPENCLAW_GATEWAY_TOKEN=$(openssl rand -hex 32)
+```
+
+### 执行权限控制
+
+根据需求设置执行权限：
+
+| 级别 | 说明 | 适用场景 |
+|------|------|---------|
+| `none` | 禁止执行命令 | 只需要对话功能 |
+| `safe` | 只允许安全命令 | 一般使用 |
+| `full` | 允许所有命令 | 完全信任的环境 |
+
+```bash
+# 设置为安全模式
+openclaw config set tools.exec.security safe
+```
+
+### 命令白名单
+
+配置允许执行的命令白名单：
+
+```json
+{
+  "tools": {
+    "exec": {
+      "security": "safe",
+      "allowlist": [
+        "dir",
+        "ls",
+        "cat",
+        "code",
+        "start"
+      ]
+    }
+  }
+}
+```
+
+---
+
+## 访问控制
+
+### 用户白名单
+
+限制可以使用机器人的用户：
+
+```json
+{
+  "plugins": {
+    "entries": {
+      "wecom": {
+        "allowedUsers": [
+          "user1",
+          "user2"
+        ]
+      }
+    }
+  }
+}
+```
+
+### 群聊白名单
+
+限制可以使用的群聊：
+
+```json
+{
+  "plugins": {
+    "entries": {
+      "wecom": {
+        "groupChat": {
+          "enabled": true,
+          "allowedGroups": [
+            "group_id_1",
+            "group_id_2"
+          ]
+        }
+      }
+    }
+  }
+}
+```
+
+### 管理员模式
+
+只允许管理员使用某些功能：
+
+```json
+{
+  "plugins": {
+    "entries": {
+      "wecom": {
+        "groupChat": {
+          "adminOnly": true
+        }
+      }
+    }
+  }
+}
+```
+
+---
+
+## 日志和审计
+
+### 启用详细日志
+
+```bash
+export LOG_LEVEL=debug
+```
+
+### 日志文件位置
+
+- Gateway 日志：`/tmp/gateway.log`
+- Agent 会话日志：`~/.openclaw/agents/main/sessions/`
+
+### 定期审计
+
+定期检查日志，关注以下内容：
+
+- 异常的访问来源
+- 失败的认证尝试
+- 敏感命令执行记录
+
+```bash
+# 查看最近的错误
+grep -i error /tmp/gateway.log | tail -50
+
+# 查看命令执行记录
+grep -i "exec\|command" /tmp/gateway.log | tail -50
+```
+
+---
+
+## 安全检查清单
+
+### 部署前检查
+
+<Check>企业微信凭证已安全存储</Check>
+<Check>配置文件权限设置为 600</Check>
+<Check>Gateway 绑定到内网地址</Check>
+<Check>使用强密码作为 Gateway Token</Check>
+<Check>防火墙已正确配置</Check>
+
+### 运行时检查
+
+<Check>定期检查日志是否有异常</Check>
+<Check>定期更新 OpenClaw 到最新版本</Check>
+<Check>定期轮换凭证和 Token</Check>
+<Check>监控服务器资源使用</Check>
+
+### 远程控制检查
+
+<Check>只在信任的网络环境中使用</Check>
+<Check>设置合适的执行权限级别</Check>
+<Check>配置命令白名单</Check>
+<Check>不要在敏感页面使用浏览器控制</Check>
+
+---
+
+## 安全事件响应
+
+### 如果凭证泄露
+
+1. **立即**在企业微信后台重置 Secret
+2. 更新配置文件中的凭证
+3. 重启 Gateway 服务
+4. 检查日志是否有异常访问
+
+### 如果发现异常访问
+
+1. 停止 Gateway 服务
+2. 检查日志确定攻击来源
+3. 更新防火墙规则
+4. 更换所有凭证
+5. 重新启动服务
+
+### 联系方式
+
+如果发现安全漏洞，请联系：
+
+- Email: [liujinqi@bit.edu.cn](mailto:liujinqi@bit.edu.cn)
+- GitHub: [提交 Issue](https://github.com/11haonb/wecom-openclaw-plugin/issues)
+
+---
+
+## 下一步
+
+<CardGroup cols={2}>
+  <Card
+    title="常见问题"
+    icon="circle-question"
+    href="/troubleshooting/faq"
+  >
+    查看常见问题解答
+  </Card>
+  <Card
+    title="故障排除"
+    icon="wrench"
+    href="/troubleshooting/common-issues"
+  >
+    解决常见问题
+  </Card>
+</CardGroup>

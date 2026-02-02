@@ -1,0 +1,100 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "WeCom OpenClaw Plugin",
+  "logo": {
+    "dark": "/logo/dark.svg",
+    "light": "/logo/light.svg"
+  },
+  "favicon": "/favicon.svg",
+  "colors": {
+    "primary": "#2563EB",
+    "light": "#3B82F6",
+    "dark": "#1D4ED8",
+    "anchors": {
+      "from": "#2563EB",
+      "to": "#7C3AED"
+    }
+  },
+  "topbarLinks": [
+    {
+      "name": "GitHub",
+      "url": "https://github.com/11haonb/wecom-openclaw-plugin"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Get Started",
+    "url": "/quickstart"
+  },
+  "tabs": [
+    {
+      "name": "Documentation",
+      "url": "/"
+    },
+    {
+      "name": "API Reference",
+      "url": "/api-reference"
+    }
+  ],
+  "anchors": [
+    {
+      "name": "GitHub",
+      "icon": "github",
+      "url": "https://github.com/11haonb/wecom-openclaw-plugin"
+    },
+    {
+      "name": "Community",
+      "icon": "discord",
+      "url": "https://discord.gg/openclaw"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": [
+        "introduction",
+        "quickstart",
+        "quickstart-en"
+      ]
+    },
+    {
+      "group": "Features",
+      "pages": [
+        "features/remote-control",
+        "features/remote-control-en",
+        "features/browser-control",
+        "features/group-chat"
+      ]
+    },
+    {
+      "group": "Configuration",
+      "pages": [
+        "configuration/environment",
+        "configuration/gateway",
+        "configuration/security"
+      ]
+    },
+    {
+      "group": "API Reference",
+      "pages": [
+        "api-reference/overview",
+        "api-reference/callback",
+        "api-reference/messages"
+      ]
+    },
+    {
+      "group": "Troubleshooting",
+      "pages": [
+        "troubleshooting/common-issues",
+        "troubleshooting/faq"
+      ]
+    }
+  ],
+  "footerSocials": {
+    "github": "https://github.com/11haonb/wecom-openclaw-plugin",
+    "twitter": "https://twitter.com/openclaw"
+  },
+  "i18n": {
+    "defaultLocale": "zh",
+    "locales": ["zh", "en"]
+  }
+}

@@ -1,0 +1,269 @@
+---
+title: 'Quick Start'
+description: 'Set up WeCom OpenClaw integration in 5 minutes'
+---
+
+## Prerequisites
+
+<Check>A server with public IP (or use tunneling)</Check>
+<Check>WeCom (企业微信) admin access</Check>
+<Check>Node.js 18+ installed</Check>
+
+---
+
+## Step 1: Get WeCom Credentials
+
+### 1.1 Get Corp ID
+
+<Steps>
+  <Step title="Login to Admin Console">
+    Visit [WeCom Admin Console](https://work.weixin.qq.com/) and login
+  </Step>
+  <Step title="Find Corp ID">
+    Click **My Enterprise** → Find **Corp ID**
+  </Step>
+  <Step title="Copy and Save">
+    Copy the Corp ID (format: `ww1234567890abcdef`)
+  </Step>
+</Steps>
+
+### 1.2 Create Application
+
+<Steps>
+  <Step title="Go to App Management">
+    Click **App Management** → **Self-built** → **Create App**
+  </Step>
+  <Step title="Fill App Info">
+    - App Name: e.g., "AI Assistant"
+    - App Logo: Upload an icon
+    - Visible Range: Select departments or members
+  </Step>
+  <Step title="Record Credentials">
+    After creation, record:
+    - **AgentId** (App ID)
+    - **Secret** (Click to view)
+  </Step>
+</Steps>
+
+### 1.3 Configure Message Receiving
+
+<Warning>
+  **Important**: Don't click confirm yet! You need to start the server first.
+</Warning>
+
+<Steps>
+  <Step title="Enter API Settings">
+    In app details, find **Receive Messages** → **Set API Receive**
+  </Step>
+  <Step title="Generate Keys">
+    Click **Random Generate** to create Token and EncodingAESKey
+  </Step>
+  <Step title="Record Info">
+    Record Token and EncodingAESKey for server configuration
+  </Step>
+</Steps>
+
+### Credentials Summary
+
+| Field | Example | Description |
+|-------|---------|-------------|
+| Corp ID | `ww1234567890abcdef` | Enterprise identifier |
+| AgentId | `1000001` | Application ID |
+| Secret | `xxxxxxxx...` | App secret (32 chars) |
+| Token | `xxxxxxxxxxxxxx` | Callback verification token |
+| EncodingAESKey | `xxxxxxxxx...` | Message encryption key (43 chars) |
+
+---
+
+## Step 2: Configure Server
+
+### 2.1 Install OpenClaw
+
+<CodeGroup>
+
+```bash npm
+npm install -g openclaw
+```
+
+```bash pnpm
+pnpm add -g openclaw
+```
+
+```bash From Source
+git clone https://github.com/openclaw/openclaw.git
+cd openclaw
+pnpm install
+pnpm build
+```
+
+</CodeGroup>
+
+### 2.2 Create Configuration File
+
+Create `~/.openclaw/openclaw.json`:
+
+```json
+{
+  "env": {
+    "OPENROUTER_API_KEY": "your_openrouter_key",
+    "WECOM_CORP_ID": "your_corp_id",
+    "WECOM_CORP_SECRET": "your_app_secret",
+    "WECOM_AGENT_ID": "your_agent_id",
+    "WECOM_CALLBACK_TOKEN": "your_token",
+    "WECOM_CALLBACK_AES_KEY": "your_encoding_aes_key"
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "openrouter/qwen/qwen3-max"
+      }
+    }
+  },
+  "gateway": {
+    "mode": "local",
+    "bind": "lan"
+  },
+  "plugins": {
+    "entries": {
+      "wecom": {
+        "enabled": true
+      }
+    }
+  }
+}
+```
+
+### 2.3 Start Service
+
+<CodeGroup>
+
+```bash Global Install
+openclaw gateway run --bind lan --port 18789
+```
+
+```bash From Source
+node dist/entry.js gateway run --bind lan --port 18789
+```
+
+```bash With Proxy
+HTTPS_PROXY=http://127.0.0.1:7890 openclaw gateway run --bind lan --port 18789
+```
+
+</CodeGroup>
+
+Success logs:
+
+```
+[WeCom] Plugin registered
+[WeCom] Corp ID: ww1234567890abcdef
+[WeCom] Agent ID: 1000001
+[WeCom] Callback path: /wecom/callback
+```
+
+---
+
+## Step 3: Complete WeCom Configuration
+
+### 3.1 Set Callback URL
+
+Go back to WeCom admin console **Receive Messages** settings:
+
+<Steps>
+  <Step title="Enter URL">
+    ```
+    http://your-server-ip:18789/wecom/callback
+    ```
+  </Step>
+  <Step title="Click Save">
+    If it shows **Verification Successful**, congratulations!
+  </Step>
+</Steps>
+
+### 3.2 Common Errors
+
+<AccordionGroup>
+  <Accordion title="Callback URL unreachable">
+    **Cause**: Firewall blocking the request
+
+    **Solution**:
+    ```bash
+    # Open port 18789
+    sudo ufw allow 18789
+    ```
+  </Accordion>
+  <Accordion title="Signature verification failed">
+    **Cause**: Token or EncodingAESKey mismatch
+
+    **Solution**:
+    1. Check Token in config matches WeCom console
+    2. Ensure no extra spaces or newlines
+  </Accordion>
+  <Accordion title="Decryption failed">
+    **Cause**: EncodingAESKey length incorrect
+
+    **Solution**:
+    EncodingAESKey must be **43 characters**
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Step 4: Test
+
+<Steps>
+  <Step title="Open WeCom App">
+    Open WeCom on your phone
+  </Step>
+  <Step title="Find the App">
+    Find your AI Assistant app in Workbench
+  </Step>
+  <Step title="Send Message">
+    Send a message like "Hello"
+  </Step>
+  <Step title="Wait for Reply">
+    Wait for AI response (usually within seconds)
+  </Step>
+</Steps>
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Remote Control"
+    icon="desktop"
+    href="/features/remote-control"
+  >
+    Control Windows/Mac remotely via WeCom
+  </Card>
+  <Card
+    title="Browser Control"
+    icon="browser"
+    href="/features/browser-control"
+  >
+    Remote control Chrome browser
+  </Card>
+  <Card
+    title="Group Chat"
+    icon="users"
+    href="/features/group-chat"
+  >
+    Use AI assistant in group chats
+  </Card>
+  <Card
+    title="Security"
+    icon="shield"
+    href="/configuration/security"
+  >
+    Security best practices
+  </Card>
+</CardGroup>
+
+---
+
+## Get Help
+
+- View logs: `tail -f /tmp/gateway.log`
+- Submit Issue: [GitHub Issues](https://github.com/11haonb/wecom-openclaw-plugin/issues)
+- Contact: [liujinqi@bit.edu.cn](mailto:liujinqi@bit.edu.cn)

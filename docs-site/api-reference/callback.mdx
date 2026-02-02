@@ -1,0 +1,302 @@
+---
+title: 'Callback API'
+description: 'WeCom callback endpoint reference'
+---
+
+## Overview
+
+The callback endpoint receives messages and events from WeCom servers. It handles both URL verification and message receiving.
+
+---
+
+## URL Verification
+
+When you configure the callback URL in WeCom admin console, WeCom sends a GET request to verify the URL.
+
+### Request
+
+```http
+GET /wecom/callback?msg_signature={signature}&timestamp={timestamp}&nonce={nonce}&echostr={echostr}
+```
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `msg_signature` | string | Yes | SHA1 signature of (token, timestamp, nonce, echostr) |
+| `timestamp` | string | Yes | Unix timestamp |
+| `nonce` | string | Yes | Random string |
+| `echostr` | string | Yes | Encrypted random string to echo back |
+
+### Verification Process
+
+1. Sort `[token, timestamp, nonce, echostr]` alphabetically
+2. Concatenate and compute SHA1 hash
+3. Compare with `msg_signature`
+4. If match, decrypt `echostr` and return plaintext
+
+### Response
+
+**Success (200):**
+```
+random_string_decrypted
+```
+
+**Failure (403):**
+```
+Verification failed
+```
+
+### Example
+
+```bash
+curl "http://your-server:18789/wecom/callback?\
+msg_signature=abc123&\
+timestamp=1234567890&\
+nonce=xyz789&\
+echostr=encrypted_string"
+```
+
+---
+
+## Message Receiving
+
+When users send messages to the app, WeCom sends a POST request with encrypted message.
+
+### Request
+
+```http
+POST /wecom/callback?msg_signature={signature}&timestamp={timestamp}&nonce={nonce}
+Content-Type: application/xml
+```
+
+### Query Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `msg_signature` | string | Yes | Message signature |
+| `timestamp` | string | Yes | Unix timestamp |
+| `nonce` | string | Yes | Random string |
+
+### Request Body
+
+```xml
+<xml>
+  <ToUserName><![CDATA[ww1234567890abcdef]]></ToUserName>
+  <AgentID>1000001</AgentID>
+  <Encrypt><![CDATA[encrypted_message_content]]></Encrypt>
+</xml>
+```
+
+### Decrypted Message Format
+
+After decryption, the message format depends on message type:
+
+<Tabs>
+  <Tab title="Text">
+    ```xml
+    <xml>
+      <ToUserName><![CDATA[ww1234567890abcdef]]></ToUserName>
+      <FromUserName><![CDATA[user_id]]></FromUserName>
+      <CreateTime>1234567890</CreateTime>
+      <MsgType><![CDATA[text]]></MsgType>
+      <Content><![CDATA[Hello AI]]></Content>
+      <MsgId>1234567890123456</MsgId>
+      <AgentID>1000001</AgentID>
+    </xml>
+    ```
+  </Tab>
+  <Tab title="Image">
+    ```xml
+    <xml>
+      <ToUserName><![CDATA[ww1234567890abcdef]]></ToUserName>
+      <FromUserName><![CDATA[user_id]]></FromUserName>
+      <CreateTime>1234567890</CreateTime>
+      <MsgType><![CDATA[image]]></MsgType>
+      <PicUrl><![CDATA[http://example.com/image.jpg]]></PicUrl>
+      <MediaId><![CDATA[media_id_here]]></MediaId>
+      <MsgId>1234567890123456</MsgId>
+      <AgentID>1000001</AgentID>
+    </xml>
+    ```
+  </Tab>
+  <Tab title="Voice">
+    ```xml
+    <xml>
+      <ToUserName><![CDATA[ww1234567890abcdef]]></ToUserName>
+      <FromUserName><![CDATA[user_id]]></FromUserName>
+      <CreateTime>1234567890</CreateTime>
+      <MsgType><![CDATA[voice]]></MsgType>
+      <MediaId><![CDATA[media_id_here]]></MediaId>
+      <Format><![CDATA[amr]]></Format>
+      <MsgId>1234567890123456</MsgId>
+      <AgentID>1000001</AgentID>
+    </xml>
+    ```
+  </Tab>
+  <Tab title="Event">
+    ```xml
+    <xml>
+      <ToUserName><![CDATA[ww1234567890abcdef]]></ToUserName>
+      <FromUserName><![CDATA[user_id]]></FromUserName>
+      <CreateTime>1234567890</CreateTime>
+      <MsgType><![CDATA[event]]></MsgType>
+      <Event><![CDATA[enter_agent]]></Event>
+      <EventKey><![CDATA[]]></EventKey>
+      <AgentID>1000001</AgentID>
+    </xml>
+    ```
+  </Tab>
+</Tabs>
+
+### Response
+
+Always return `success` string within 5 seconds:
+
+```
+success
+```
+
+<Warning>
+  If you don't respond within 5 seconds, WeCom will retry the request up to 3 times.
+</Warning>
+
+---
+
+## Message Fields
+
+### Common Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `ToUserName` | string | Corp ID |
+| `FromUserName` | string | User ID who sent the message |
+| `CreateTime` | number | Unix timestamp |
+| `MsgType` | string | Message type |
+| `AgentID` | number | Application ID |
+
+### Text Message Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `Content` | string | Text content |
+| `MsgId` | string | Message ID |
+
+### Image Message Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `PicUrl` | string | Image URL (temporary) |
+| `MediaId` | string | Media ID for downloading |
+| `MsgId` | string | Message ID |
+
+### Event Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `Event` | string | Event type |
+| `EventKey` | string | Event key (optional) |
+
+---
+
+## Event Types
+
+| Event | Description |
+|-------|-------------|
+| `enter_agent` | User enters the app |
+| `subscribe` | User follows the app |
+| `unsubscribe` | User unfollows the app |
+| `click` | User clicks menu button |
+| `view` | User clicks menu link |
+
+---
+
+## Encryption
+
+### Algorithm
+
+WeCom uses AES-256-CBC encryption with PKCS#7 padding.
+
+### Encryption Key
+
+The `EncodingAESKey` is Base64 encoded. Decode it to get the 32-byte AES key.
+
+```javascript
+const aesKey = Buffer.from(encodingAESKey + '=', 'base64');
+```
+
+### Decryption Process
+
+1. Base64 decode the `Encrypt` field
+2. AES-256-CBC decrypt with the key
+3. Remove PKCS#7 padding
+4. Extract message content (skip first 16 bytes random, 4 bytes length)
+5. Verify Corp ID suffix
+
+---
+
+## Error Handling
+
+### Signature Mismatch
+
+If signature verification fails, return 403:
+
+```
+Signature verification failed
+```
+
+### Decryption Error
+
+If decryption fails, check:
+1. `EncodingAESKey` is correct (43 characters)
+2. No extra whitespace in the key
+3. Corp ID matches
+
+### Timeout
+
+If processing takes too long:
+1. Return `success` immediately
+2. Process message asynchronously
+3. Send reply via Send Message API
+
+---
+
+## Testing
+
+### Test with curl
+
+```bash
+# Simulate verification request
+curl "http://localhost:18789/wecom/callback?\
+msg_signature=test&\
+timestamp=1234567890&\
+nonce=test&\
+echostr=test"
+```
+
+### Check Logs
+
+```bash
+tail -f /tmp/gateway.log | grep -i wecom
+```
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Message API"
+    icon="message"
+    href="/api-reference/messages"
+  >
+    Learn how to send messages
+  </Card>
+  <Card
+    title="Troubleshooting"
+    icon="wrench"
+    href="/troubleshooting/common-issues"
+  >
+    Solve common issues
+  </Card>
+</CardGroup>

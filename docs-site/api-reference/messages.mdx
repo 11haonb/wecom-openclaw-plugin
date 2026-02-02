@@ -1,0 +1,346 @@
+---
+title: 'Message API'
+description: 'Send messages to WeCom users'
+---
+
+## Overview
+
+The plugin uses WeCom's official API to send messages to users. This page documents the message formats and API usage.
+
+---
+
+## Authentication
+
+### Access Token
+
+All API calls require an `access_token`. The plugin manages this automatically.
+
+```http
+GET https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid={corpid}&corpsecret={corpsecret}
+```
+
+**Response:**
+```json
+{
+  "errcode": 0,
+  "errmsg": "ok",
+  "access_token": "accesstoken000001",
+  "expires_in": 7200
+}
+```
+
+<Info>
+  Access tokens expire after 2 hours. The plugin automatically refreshes them.
+</Info>
+
+---
+
+## Send Message
+
+### Endpoint
+
+```http
+POST https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token={access_token}
+```
+
+### Common Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `touser` | string | No* | User ID list, separated by `\|` |
+| `toparty` | string | No* | Department ID list |
+| `totag` | string | No* | Tag ID list |
+| `msgtype` | string | Yes | Message type |
+| `agentid` | number | Yes | Application ID |
+
+<Note>
+  *At least one of `touser`, `toparty`, or `totag` must be specified.
+</Note>
+
+---
+
+## Message Types
+
+### Text Message
+
+```json
+{
+  "touser": "user1|user2",
+  "msgtype": "text",
+  "agentid": 1000001,
+  "text": {
+    "content": "Hello! This is a message from AI assistant."
+  },
+  "safe": 0,
+  "enable_duplicate_check": 0
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `content` | string | Yes | Message content (max 2048 bytes) |
+| `safe` | number | No | 0: normal, 1: confidential |
+
+### Markdown Message
+
+```json
+{
+  "touser": "user1",
+  "msgtype": "markdown",
+  "agentid": 1000001,
+  "markdown": {
+    "content": "# Heading\n\nThis is **bold** and this is *italic*.\n\n> Quote block\n\n- List item 1\n- List item 2"
+  }
+}
+```
+
+**Supported Markdown:**
+- Headings: `# ## ###`
+- Bold: `**text**`
+- Italic: `*text*`
+- Links: `[text](url)`
+- Quotes: `> text`
+- Lists: `- item`
+- Code: `` `code` ``
+
+### Image Message
+
+```json
+{
+  "touser": "user1",
+  "msgtype": "image",
+  "agentid": 1000001,
+  "image": {
+    "media_id": "MEDIA_ID"
+  }
+}
+```
+
+<Note>
+  You need to upload the image first to get `media_id`.
+</Note>
+
+### File Message
+
+```json
+{
+  "touser": "user1",
+  "msgtype": "file",
+  "agentid": 1000001,
+  "file": {
+    "media_id": "MEDIA_ID"
+  }
+}
+```
+
+### Text Card Message
+
+```json
+{
+  "touser": "user1",
+  "msgtype": "textcard",
+  "agentid": 1000001,
+  "textcard": {
+    "title": "Card Title",
+    "description": "Card description text",
+    "url": "https://example.com",
+    "btntxt": "More"
+  }
+}
+```
+
+### News Message
+
+```json
+{
+  "touser": "user1",
+  "msgtype": "news",
+  "agentid": 1000001,
+  "news": {
+    "articles": [
+      {
+        "title": "Article Title",
+        "description": "Article description",
+        "url": "https://example.com",
+        "picurl": "https://example.com/image.jpg"
+      }
+    ]
+  }
+}
+```
+
+---
+
+## Response
+
+### Success
+
+```json
+{
+  "errcode": 0,
+  "errmsg": "ok",
+  "msgid": "msgid_123456"
+}
+```
+
+### Error
+
+```json
+{
+  "errcode": 40014,
+  "errmsg": "invalid access_token"
+}
+```
+
+---
+
+## Error Codes
+
+| Code | Description | Solution |
+|------|-------------|----------|
+| `0` | Success | - |
+| `40001` | Invalid credential | Check Corp ID and Secret |
+| `40014` | Invalid access_token | Refresh token |
+| `41001` | Missing access_token | Add token parameter |
+| `42001` | Token expired | Refresh token |
+| `45009` | API rate limit | Wait and retry |
+| `60011` | No permission | Check app visible range |
+| `81013` | User not in visible range | Add user to app |
+
+---
+
+## Upload Media
+
+### Endpoint
+
+```http
+POST https://qyapi.weixin.qq.com/cgi-bin/media/upload?access_token={token}&type={type}
+Content-Type: multipart/form-data
+```
+
+### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `type` | string | `image`, `voice`, `video`, `file` |
+
+### Limits
+
+| Type | Max Size | Formats |
+|------|----------|---------|
+| Image | 10MB | JPG, PNG |
+| Voice | 2MB | AMR |
+| Video | 10MB | MP4 |
+| File | 20MB | Any |
+
+### Response
+
+```json
+{
+  "errcode": 0,
+  "errmsg": "ok",
+  "type": "image",
+  "media_id": "MEDIA_ID",
+  "created_at": 1234567890
+}
+```
+
+---
+
+## Rate Limits
+
+| API | Limit |
+|-----|-------|
+| Send Message | 200/min per app |
+| Upload Media | 1000/day |
+| Get Token | 2000/day |
+
+---
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Batch Send" icon="users">
+    Use `touser` with multiple IDs separated by `|` instead of multiple API calls
+  </Card>
+  <Card title="Use Markdown" icon="markdown">
+    Markdown messages look better and support formatting
+  </Card>
+  <Card title="Handle Errors" icon="triangle-exclamation">
+    Always check `errcode` and handle errors gracefully
+  </Card>
+  <Card title="Cache Token" icon="database">
+    Cache access_token and refresh before expiry
+  </Card>
+</CardGroup>
+
+---
+
+## Code Examples
+
+### Node.js
+
+```javascript
+const axios = require('axios');
+
+async function sendMessage(accessToken, userId, content) {
+  const response = await axios.post(
+    `https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=${accessToken}`,
+    {
+      touser: userId,
+      msgtype: 'text',
+      agentid: 1000001,
+      text: { content }
+    }
+  );
+
+  if (response.data.errcode !== 0) {
+    throw new Error(response.data.errmsg);
+  }
+
+  return response.data.msgid;
+}
+```
+
+### Python
+
+```python
+import requests
+
+def send_message(access_token, user_id, content):
+    url = f"https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token={access_token}"
+    data = {
+        "touser": user_id,
+        "msgtype": "text",
+        "agentid": 1000001,
+        "text": {"content": content}
+    }
+    response = requests.post(url, json=data)
+    result = response.json()
+
+    if result["errcode"] != 0:
+        raise Exception(result["errmsg"])
+
+    return result["msgid"]
+```
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Callback API"
+    icon="webhook"
+    href="/api-reference/callback"
+  >
+    Learn about receiving messages
+  </Card>
+  <Card
+    title="Troubleshooting"
+    icon="wrench"
+    href="/troubleshooting/common-issues"
+  >
+    Solve common issues
+  </Card>
+</CardGroup>

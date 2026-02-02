@@ -1,0 +1,225 @@
+---
+title: 'API Overview'
+description: 'WeCom OpenClaw Plugin API Reference'
+---
+
+## Overview
+
+WeCom OpenClaw Plugin exposes a callback endpoint for receiving messages from WeCom servers and provides internal APIs for message handling.
+
+---
+
+## Callback Endpoint
+
+### URL
+
+```
+POST /wecom/callback
+GET /wecom/callback
+```
+
+### GET Request (Verification)
+
+Used by WeCom to verify the callback URL.
+
+**Query Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `msg_signature` | string | Message signature |
+| `timestamp` | string | Timestamp |
+| `nonce` | string | Random string |
+| `echostr` | string | Encrypted echo string |
+
+**Response:**
+
+Returns decrypted `echostr` if verification succeeds.
+
+### POST Request (Message)
+
+Receives messages from WeCom.
+
+**Query Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `msg_signature` | string | Message signature |
+| `timestamp` | string | Timestamp |
+| `nonce` | string | Random string |
+
+**Request Body:**
+
+XML format encrypted message:
+
+```xml
+<xml>
+  <ToUserName><![CDATA[corp_id]]></ToUserName>
+  <AgentID>agent_id</AgentID>
+  <Encrypt><![CDATA[encrypted_content]]></Encrypt>
+</xml>
+```
+
+**Response:**
+
+Returns `success` string.
+
+---
+
+## Message Types
+
+### Text Message
+
+```xml
+<xml>
+  <ToUserName><![CDATA[corp_id]]></ToUserName>
+  <FromUserName><![CDATA[user_id]]></FromUserName>
+  <CreateTime>1234567890</CreateTime>
+  <MsgType><![CDATA[text]]></MsgType>
+  <Content><![CDATA[message content]]></Content>
+  <MsgId>1234567890123456</MsgId>
+  <AgentID>1000001</AgentID>
+</xml>
+```
+
+### Image Message
+
+```xml
+<xml>
+  <ToUserName><![CDATA[corp_id]]></ToUserName>
+  <FromUserName><![CDATA[user_id]]></FromUserName>
+  <CreateTime>1234567890</CreateTime>
+  <MsgType><![CDATA[image]]></MsgType>
+  <PicUrl><![CDATA[image_url]]></PicUrl>
+  <MediaId><![CDATA[media_id]]></MediaId>
+  <MsgId>1234567890123456</MsgId>
+  <AgentID>1000001</AgentID>
+</xml>
+```
+
+### Event Message
+
+```xml
+<xml>
+  <ToUserName><![CDATA[corp_id]]></ToUserName>
+  <FromUserName><![CDATA[user_id]]></FromUserName>
+  <CreateTime>1234567890</CreateTime>
+  <MsgType><![CDATA[event]]></MsgType>
+  <Event><![CDATA[event_type]]></Event>
+  <AgentID>1000001</AgentID>
+</xml>
+```
+
+---
+
+## Send Message API
+
+The plugin uses WeCom's Send Message API internally.
+
+### Endpoint
+
+```
+POST https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=ACCESS_TOKEN
+```
+
+### Text Message
+
+```json
+{
+  "touser": "user_id",
+  "msgtype": "text",
+  "agentid": 1000001,
+  "text": {
+    "content": "Hello, this is a message from AI assistant."
+  }
+}
+```
+
+### Markdown Message
+
+```json
+{
+  "touser": "user_id",
+  "msgtype": "markdown",
+  "agentid": 1000001,
+  "markdown": {
+    "content": "# Title\n\nThis is **markdown** content."
+  }
+}
+```
+
+---
+
+## Internal Events
+
+### Message Received
+
+Emitted when a message is received from WeCom.
+
+```typescript
+interface MessageReceivedEvent {
+  type: 'text' | 'image' | 'voice' | 'video' | 'file';
+  fromUser: string;
+  content: string;
+  msgId: string;
+  agentId: number;
+  timestamp: number;
+}
+```
+
+### Reply Sent
+
+Emitted when a reply is sent to user.
+
+```typescript
+interface ReplySentEvent {
+  toUser: string;
+  content: string;
+  msgType: 'text' | 'markdown';
+  agentId: number;
+  timestamp: number;
+}
+```
+
+---
+
+## Error Codes
+
+| Code | Description | Solution |
+|------|-------------|----------|
+| `40001` | Invalid access_token | Refresh access_token |
+| `40014` | Invalid access_token | Check Corp ID and Secret |
+| `41001` | Missing access_token | Add access_token parameter |
+| `42001` | access_token expired | Refresh access_token |
+| `60011` | No permission | Check app visible range |
+
+---
+
+## Rate Limits
+
+WeCom API has the following rate limits:
+
+| API | Limit |
+|-----|-------|
+| Send Message | 200 times/minute per app |
+| Get Access Token | 2000 times/day |
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Callback API"
+    icon="webhook"
+    href="/api-reference/callback"
+  >
+    Detailed callback API reference
+  </Card>
+  <Card
+    title="Message API"
+    icon="message"
+    href="/api-reference/messages"
+  >
+    Message sending API reference
+  </Card>
+</CardGroup>
