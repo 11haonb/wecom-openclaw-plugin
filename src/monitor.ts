@@ -626,21 +626,101 @@ async function readBody(req: IncomingMessage): Promise<string> {
 }
 
 async function loadConfigFromRuntime(core: any): Promise<OpenClawConfig> {
-  // Try to get config from runtime if available
-  // This is a fallback - ideally config should be passed in options
-  return {} as OpenClawConfig;
+  // 尝试从 runtime 获取配置
+  if (core?.config?.get) {
+    try {
+      return await core.config.get();
+    } catch (err) {
+      console.warn("[WeCom] Failed to load config from runtime:", err);
+    }
+  }
+
+  // 尝试从 runtime.cfg 获取
+  if (core?.cfg) {
+    return core.cfg;
+  }
+
+  // 从环境变量构建基本配置
+  const config: OpenClawConfig = {
+    env: {},
+    agents: {
+      defaults: {
+        model: {
+          primary: process.env.OPENROUTER_API_KEY
+            ? "openrouter/qwen/qwen3-max"
+            : process.env.OPENAI_API_KEY
+              ? "openai/gpt-4o"
+              : "anthropic/claude-sonnet-4-5-20251101",
+        },
+      },
+    },
+    gateway: {
+      mode: "local",
+      bind: "lan",
+      port: 18789,
+    },
+  } as OpenClawConfig;
+
+  return config;
 }
 
 function createRuntimeFromCore(core: any): RuntimeEnv {
+  // 如果 core 已经是完整的 RuntimeEnv，直接返回
+  if (core?.log && core?.error && core?.channel) {
+    return core as RuntimeEnv;
+  }
+
+  // 从 core 构建 RuntimeEnv
   return {
-    log: console.log,
-    error: console.error,
+    log: core?.log ?? console.log,
+    error: core?.error ?? console.error,
+    warn: core?.warn ?? console.warn,
+    debug: core?.debug ?? console.debug,
+    channel: core?.channel,
+    config: core?.config,
+    system: core?.system,
   } as RuntimeEnv;
 }
 
 // ============================================
 // 独立服务器模式 (用于测试或独立部署)
 // ============================================
+
+/**
+ * 启动独立的 WeCom 回调监听服务器
+ * 用于测试或独立部署场景
+ */
+export async function startMonitor(
+  accountConfig: WeComAccountConfig,
+  onMessage: (msg: WeComParsedMessage, rawXml: string) => void | Promise<void>,
+  onError?: (error: Error) => void
+): Promise<http.Server> {
+  const crypto = new WeComCrypto({
+    token: accountConfig.callbackToken,
+    aesKey: accountConfig.callbackAesKey,
+    corpId: accountConfig.corpId,
+  });
+
+  const port = accountConfig.callbackPort || 8080;
+  const path = accountConfig.callbackPath || "/wecom/callback";
+
+  const server = createMonitorServer({
+    port,
+    path,
+    crypto,
+    onMessage,
+    onError,
+  });
+
+  return new Promise((resolve, reject) => {
+    server.on("error", reject);
+    server.listen(port, "0.0.0.0", () => {
+      console.log(`[WeCom] Callback server started on port ${port}`);
+      resolve(server);
+    });
+  });
+}
+
 export interface MonitorConfig {
   port: number;
   path: string;

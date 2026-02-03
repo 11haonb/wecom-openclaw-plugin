@@ -87,7 +87,15 @@ export const wecomPlugin: ChannelPlugin<WeComResolvedAccount> = {
           accountId: accountId?.trim() || DEFAULT_ACCOUNT_ID,
           enabled: false,
           configured: false,
-          config: {} as WeComAccountConfig,
+          config: {
+            corpId: "",
+            corpSecret: "",
+            agentId: 0,
+            callbackToken: "",
+            callbackAesKey: "",
+            callbackPort: 8080,
+            callbackPath: "/wecom/callback",
+          },
           corpId: "",
           agentId: 0,
         };

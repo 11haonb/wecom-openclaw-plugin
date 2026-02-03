@@ -85,7 +85,7 @@ export default plugin;
 export { WeComCrypto, generateNonce, getTimestamp } from "./src/crypto.js";
 export { WeComApiClient } from "./src/api.js";
 export { parseMessage, getMessageId, isEventMessage } from "./src/parser.js";
-export { handleWeComWebhookRequest, getWeComConfig, createMonitorServer } from "./src/monitor.js";
+export { handleWeComWebhookRequest, getWeComConfig, startMonitor, createMonitorServer } from "./src/monitor.js";
 export { wecomPlugin, wecomDock } from "./src/channel.js";
 export { wecomOutbound } from "./src/outbound.js";
 
