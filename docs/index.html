@@ -6,73 +6,583 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
   <meta name="description" content="通过企业微信与 AI 助手对话，远程控制你的电脑">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css">
+  <meta name="theme-color" content="#2563EB">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Theme -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify-themeable@0/dist/css/theme-simple.css">
+
   <style>
     :root {
+      /* Brand Colors */
       --theme-color: #2563EB;
+      --theme-color-light: #3B82F6;
+      --theme-color-dark: #1D4ED8;
+      --accent-color: #7C3AED;
+      --success-color: #10B981;
+      --warning-color: #F59E0B;
+      --error-color: #EF4444;
+
+      /* Typography */
+      --base-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --code-font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+      --base-font-size: 16px;
+      --base-line-height: 1.7;
+
+      /* Sidebar */
+      --sidebar-width: 280px;
+      --sidebar-background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+      --sidebar-nav-link-color: #475569;
+      --sidebar-nav-link-color--active: var(--theme-color);
+      --sidebar-nav-link-font-weight: 500;
+      --sidebar-nav-link-font-weight--active: 600;
+      --sidebar-name-font-size: 1.25rem;
+      --sidebar-name-font-weight: 700;
+      --sidebar-name-color: var(--theme-color);
+
+      /* Content */
+      --content-max-width: 860px;
+      --heading-color: #1e293b;
+      --base-color: #334155;
+      --link-color: var(--theme-color);
+      --link-color--hover: var(--theme-color-dark);
+
+      /* Code */
+      --code-inline-background: #f1f5f9;
+      --code-inline-color: #e11d48;
+      --code-inline-padding: 0.15em 0.4em;
+      --code-inline-border-radius: 4px;
+      --code-block-background: #0f172a;
+      --code-block-border-radius: 12px;
+      --code-block-padding: 1.25em 1.5em;
+
+      /* Blockquote */
+      --blockquote-background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
+      --blockquote-border-color: var(--theme-color);
+      --blockquote-border-width: 4px;
+
+      /* Table */
+      --table-head-background: #f8fafc;
+      --table-row-odd-background: #fafafa;
+
+      /* Cover */
+      --cover-background-color: var(--theme-color);
+      --cover-heading-color: #fff;
+      --cover-color: rgba(255,255,255,0.9);
+
+      /* Search */
+      --search-input-border-color: #e2e8f0;
+      --search-input-background-color: #fff;
+      --search-result-keyword-background: rgba(37, 99, 235, 0.15);
+      --search-result-keyword-color: var(--theme-color-dark);
     }
+
+    /* Dark mode support */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --sidebar-background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+        --sidebar-nav-link-color: #94a3b8;
+        --heading-color: #f1f5f9;
+        --base-color: #cbd5e1;
+        --code-inline-background: #1e293b;
+        --code-inline-color: #f472b6;
+        --blockquote-background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        --table-head-background: #1e293b;
+        --table-row-odd-background: #0f172a;
+        --search-input-background-color: #1e293b;
+        --search-input-border-color: #334155;
+      }
+
+      body {
+        background-color: #0f172a;
+      }
+
+      .markdown-section {
+        background-color: #0f172a;
+      }
+    }
+
+    /* Global Styles */
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--base-font-family);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Sidebar Enhancements */
+    .sidebar {
+      border-right: 1px solid rgba(0,0,0,0.05);
+      box-shadow: 2px 0 12px rgba(0,0,0,0.03);
+    }
+
+    .sidebar-nav {
+      padding: 1.5rem 1rem;
+    }
+
+    .sidebar-nav > ul > li {
+      margin-bottom: 0.5rem;
+    }
+
     .sidebar-nav > ul > li > a {
-      font-weight: bold;
+      font-weight: 600;
+      color: var(--heading-color);
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
-    .markdown-section h1 {
+
+    .sidebar-nav > ul > li > ul {
+      margin-top: 0.5rem;
+      padding-left: 0.75rem;
+      border-left: 2px solid #e2e8f0;
+    }
+
+    .sidebar-nav li a {
+      padding: 0.4rem 0.75rem;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+      display: block;
+    }
+
+    .sidebar-nav li a:hover {
+      background-color: rgba(37, 99, 235, 0.08);
       color: var(--theme-color);
     }
+
+    .sidebar-nav li.active > a {
+      background-color: rgba(37, 99, 235, 0.12);
+      color: var(--theme-color);
+    }
+
+    /* App Name / Logo */
+    .app-name-link {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 1rem 1.5rem !important;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, var(--theme-color) 0%, var(--accent-color) 100%);
+      border-radius: 12px;
+      color: #fff !important;
+      font-weight: 700;
+      text-decoration: none;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .app-name-link:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+    }
+
+    .app-name-link::before {
+      content: '🤖';
+      font-size: 1.5rem;
+    }
+
+    /* Content Area */
+    .markdown-section {
+      padding: 2.5rem 3rem;
+    }
+
+    .markdown-section h1 {
+      font-size: 2.25rem;
+      font-weight: 700;
+      margin-top: 0;
+      padding-bottom: 0.75rem;
+      border-bottom: 3px solid var(--theme-color);
+    }
+
+    .markdown-section h2 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-top: 2.5rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .markdown-section h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--theme-color-dark);
+    }
+
+    /* Code Blocks */
+    .markdown-section pre {
+      position: relative;
+      margin: 1.5rem 0;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+
+    .markdown-section pre code {
+      font-family: var(--code-font-family);
+      font-size: 0.875rem;
+      line-height: 1.6;
+    }
+
     .markdown-section code {
-      background-color: #f6f8fa;
-      padding: 2px 6px;
+      font-family: var(--code-font-family);
+      font-size: 0.875em;
+    }
+
+    /* Tables */
+    .markdown-section table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      margin: 1.5rem 0;
+    }
+
+    .markdown-section table th {
+      background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+      font-weight: 600;
+      text-align: left;
+      padding: 0.875rem 1rem;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    .markdown-section table td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .markdown-section table tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* Blockquotes */
+    .markdown-section blockquote {
+      margin: 1.5rem 0;
+      padding: 1rem 1.25rem;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .markdown-section blockquote p {
+      margin: 0;
+    }
+
+    /* Tips/Warnings */
+    .markdown-section blockquote > p:first-child::before {
+      content: '💡 ';
+    }
+
+    /* Links */
+    .markdown-section a {
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.2s ease;
+    }
+
+    .markdown-section a:hover {
+      border-bottom-color: var(--theme-color);
+    }
+
+    /* Lists */
+    .markdown-section ul,
+    .markdown-section ol {
+      padding-left: 1.5rem;
+    }
+
+    .markdown-section li {
+      margin: 0.5rem 0;
+    }
+
+    .markdown-section li::marker {
+      color: var(--theme-color);
+    }
+
+    /* Search */
+    .search {
+      margin-bottom: 1.5rem;
+      padding: 0 1rem;
+    }
+
+    .search input {
+      width: 100%;
+      padding: 0.75rem 1rem 0.75rem 2.5rem;
+      border: 2px solid var(--search-input-border-color);
+      border-radius: 10px;
+      font-size: 0.9rem;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'%3E%3C/line%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: 0.75rem center;
+    }
+
+    .search input:focus {
+      outline: none;
+      border-color: var(--theme-color);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+
+    .search .matching-post {
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      margin: 0.25rem 0;
+      transition: background-color 0.2s ease;
+    }
+
+    .search .matching-post:hover {
+      background-color: rgba(37, 99, 235, 0.08);
+    }
+
+    /* Copy Code Button */
+    .docsify-copy-code-button {
+      font-family: var(--base-font-family);
+      font-size: 0.75rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.1);
+      color: #94a3b8;
+      transition: all 0.2s ease;
+    }
+
+    .docsify-copy-code-button:hover {
+      background: rgba(255,255,255,0.2);
+      color: #fff;
+    }
+
+    /* Pagination */
+    .pagination-item {
+      padding: 1rem 1.25rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      transition: all 0.2s ease;
+    }
+
+    .pagination-item:hover {
+      border-color: var(--theme-color);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+    }
+
+    .pagination-item-title {
+      font-weight: 600;
+      color: var(--theme-color);
+    }
+
+    /* GitHub Corner */
+    .github-corner svg {
+      fill: var(--theme-color);
+      color: #fff;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
       border-radius: 4px;
     }
-    .markdown-section pre {
-      background-color: #1e293b;
-      border-radius: 8px;
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
     }
-    .cover-main {
-      background: linear-gradient(135deg, #2563EB 0%, #7C3AED 100%) !important;
+
+    /* Mobile Responsive */
+    @media screen and (max-width: 768px) {
+      .markdown-section {
+        padding: 1.5rem;
+      }
+
+      .markdown-section h1 {
+        font-size: 1.75rem;
+      }
+
+      .sidebar {
+        padding-top: 0;
+      }
+
+      .app-name-link {
+        margin: 1rem;
+        padding: 0.75rem 1rem !important;
+      }
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .markdown-section > * {
+      animation: fadeIn 0.3s ease forwards;
+    }
+
+    /* Feature Cards (for README) */
+    .feature-card {
+      padding: 1.5rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      margin: 1rem 0;
+      transition: all 0.2s ease;
+    }
+
+    .feature-card:hover {
+      border-color: var(--theme-color);
+      box-shadow: 0 4px 20px rgba(37, 99, 235, 0.1);
+      transform: translateY(-2px);
+    }
+
+    /* Badge Styles */
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-blue {
+      background: rgba(37, 99, 235, 0.1);
+      color: var(--theme-color);
+    }
+
+    .badge-green {
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--success-color);
+    }
+
+    .badge-yellow {
+      background: rgba(245, 158, 11, 0.1);
+      color: var(--warning-color);
+    }
+
+    /* Loading Animation */
+    #app {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      font-size: 1.25rem;
+      color: var(--theme-color);
+    }
+
+    #app::after {
+      content: '';
+      width: 24px;
+      height: 24px;
+      margin-left: 1rem;
+      border: 3px solid #e2e8f0;
+      border-top-color: var(--theme-color);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
   </style>
 </head>
 <body>
-  <div id="app">Loading...</div>
+  <div id="app">加载中</div>
   <script>
     window.$docsify = {
-      name: 'WeCom OpenClaw Plugin',
+      name: 'WeCom OpenClaw',
+      nameLink: '/',
       repo: 'https://github.com/11haonb/wecom-openclaw-plugin',
       loadSidebar: true,
       subMaxLevel: 3,
+      auto2top: true,
+
+      // Search
       search: {
-        placeholder: '搜索',
+        placeholder: '搜索文档...',
         noData: '没有找到结果',
-        paths: 'auto'
+        paths: 'auto',
+        depth: 3
       },
+
+      // Copy Code
       copyCode: {
         buttonText: '复制',
         errorText: '错误',
-        successText: '已复制'
+        successText: '已复制!'
       },
+
+      // Pagination
       pagination: {
-        previousText: '上一篇',
-        nextText: '下一篇',
-        crossChapter: true
+        previousText: '← 上一篇',
+        nextText: '下一篇 →',
+        crossChapter: true,
+        crossChapterText: true
       },
+
+      // Tabs
       tabs: {
         persist: true,
-        sync: true
+        sync: true,
+        theme: 'classic',
+        tabComments: true,
+        tabHeadings: true
+      },
+
+      // Progress bar
+      progress: {
+        position: 'top',
+        color: 'var(--theme-color)',
+        height: '3px'
+      },
+
+      // Plugins config
+      themeable: {
+        readyTransition: true,
+        responsiveTables: true
       }
     }
   </script>
-  <!-- Docsify -->
-  <script src="https://cdn.jsdelivr.net/npm/docsify@4"></script>
+
+  <!-- Docsify Core -->
+  <script src="https://cdn.jsdelivr.net/npm/docsify@4/lib/docsify.min.js"></script>
+
+  <!-- Themeable -->
+  <script src="https://cdn.jsdelivr.net/npm/docsify-themeable@0/dist/js/docsify-themeable.min.js"></script>
+
   <!-- Plugins -->
-  <script src="https://cdn.jsdelivr.net/npm/docsify/lib/plugins/search.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/docsify-copy-code"></script>
-  <script src="https://cdn.jsdelivr.net/npm/docsify-pagination/dist/docsify-pagination.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docsify@4/lib/plugins/search.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docsify-copy-code@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docsify-pagination@2/dist/docsify-pagination.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/docsify-tabs@1"></script>
-  <!-- Syntax Highlighting -->
+  <script src="https://cdn.jsdelivr.net/npm/docsify-progress@1"></script>
+
+  <!-- Syntax Highlighting - Tomorrow Night Theme -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism-tomorrow.min.css">
   <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-bash.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-json.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-javascript.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-typescript.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-python.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-xml-doc.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-nginx.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-docker.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-yaml.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-markdown.min.js"></script>
+
+  <!-- Emoji Support -->
+  <script src="https://cdn.jsdelivr.net/npm/docsify@4/lib/plugins/emoji.min.js"></script>
+
+  <!-- Zoom Image -->
+  <script src="https://cdn.jsdelivr.net/npm/docsify@4/lib/plugins/zoom-image.min.js"></script>
 </body>
 </html>
