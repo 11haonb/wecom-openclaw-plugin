@@ -88,10 +88,40 @@ export function createWeComReplyDispatcher(params: CreateWeComReplyDispatcherPar
       humanDelay: core.channel.reply.resolveHumanDelayConfig(cfg, agentId),
       onReplyStart: typingCallbacks.onReplyStart,
       deliver: async (payload: ReplyPayload) => {
-        params.runtime.log?.(`[WeCom] deliver called: text=${payload.text?.slice(0, 100)}`);
+        params.runtime.log?.(`[WeCom] deliver called: text=${payload.text?.slice(0, 100)}, mediaUrl=${payload.mediaUrl ?? "none"}, mediaUrls=${payload.mediaUrls?.length ?? 0}`);
+
+        // Collect all media URLs
+        const allMediaUrls: string[] = [];
+        if (payload.mediaUrl) {
+          allMediaUrls.push(payload.mediaUrl);
+        }
+        if (payload.mediaUrls && payload.mediaUrls.length > 0) {
+          allMediaUrls.push(...payload.mediaUrls);
+        }
+
+        // Send media files first
+        for (const mediaUrl of allMediaUrls) {
+          try {
+            params.runtime.log?.(`[WeCom] deliver: sending media ${mediaUrl.slice(0, 50)}...`);
+            await client.sendImageFromUrl(replyTarget, mediaUrl);
+            params.runtime.log?.(`[WeCom] deliver: media sent successfully`);
+          } catch (err) {
+            params.runtime.error?.(`[WeCom] Failed to send media: ${String(err)}`);
+            // Send URL as fallback text
+            try {
+              await client.sendText(replyTarget, `📎 ${mediaUrl}`);
+            } catch (textErr) {
+              params.runtime.error?.(`[WeCom] Failed to send media URL as text: ${String(textErr)}`);
+            }
+          }
+        }
+
+        // Send text if present
         const text = payload.text ?? "";
         if (!text.trim()) {
-          params.runtime.log?.(`[WeCom] deliver: empty text, skipping`);
+          if (allMediaUrls.length === 0) {
+            params.runtime.log?.(`[WeCom] deliver: empty payload, skipping`);
+          }
           return;
         }
 
