@@ -26,11 +26,17 @@
 </p>
 
 <p align="center">
-  <a href="#-quick-start">Quick Start</a> •
+  <a href="https://11haonb.github.io/wecom-openclaw-plugin/">📚 Documentation</a> •
+  <a href="https://11haonb.github.io/wecom-openclaw-plugin/#/configuration/quickstart">Quick Start</a> •
   <a href="#-features">Features</a> •
   <a href="#%EF%B8%8F-remote-browser-control">Browser Control</a> •
-  <a href="#-documentation">Docs</a> •
   <a href="./docs/QUICKSTART_CN.md">中文文档</a>
+</p>
+
+<p align="center">
+  <a href="https://11haonb.github.io/wecom-openclaw-plugin/">
+    <img src="https://img.shields.io/badge/Docs-Online-07C160?style=for-the-badge&logo=readthedocs&logoColor=white" alt="Documentation">
+  </a>
 </p>
 
 ---
