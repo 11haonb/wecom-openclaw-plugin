@@ -626,9 +626,8 @@ async function readBody(req: IncomingMessage): Promise<string> {
 }
 
 async function loadConfigFromRuntime(core: any): Promise<OpenClawConfig> {
-  // Try to get config from runtime if available
-  // This is a fallback - ideally config should be passed in options
-  return {} as OpenClawConfig;
+  // Load config from runtime
+  return core.config.loadConfig();
 }
 
 function createRuntimeFromCore(core: any): RuntimeEnv {
