@@ -1,10 +1,10 @@
 {
-  "id": "wecom",
+  "id": "wecom-openclaw-integration",
   "name": "WeCom Integration",
   "description": "Connect OpenClaw AI agent to WeCom (企业微信) - Send messages, control browsers, and automate tasks via WeCom",
   "version": "1.0.0",
   "channels": [
-    "wecom"
+    "wecom-openclaw-integration"
   ],
   "configSchema": {
     "type": "object",

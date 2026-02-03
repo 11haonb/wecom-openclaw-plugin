@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage/
+.nyc_output/
+
+# Documentation (included in separate docs site)
+docs/
+docs-site/
+
+# Git
+.git/
+.gitignore
+
+# Temp files
+*.tmp
+*.log
+npm-debug.log*
+
+# Claude
+.claude/

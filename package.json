@@ -40,18 +40,19 @@
     "install": {
       "npmSpec": "wecom-openclaw-integration",
       "localPath": "extensions/wecom",
-      "defaultChoice": "local",
-      "pluginId": "wecom"
+      "defaultChoice": "npm",
+      "pluginId": "wecom-openclaw-integration"
     }
   },
   "dependencies": {
     "fast-xml-parser": "^4.3.0",
     "zod": "^3.22.0"
   },
-  "devDependencies": {
-    "openclaw": "workspace:*"
-  },
   "peerDependencies": {
     "openclaw": ">=2026.1.26"
+  },
+  "devDependencies": {
+    "@types/node": "^25.2.0",
+    "typescript": "^5.9.3"
   }
 }
