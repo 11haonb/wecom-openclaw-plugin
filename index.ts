@@ -15,7 +15,7 @@
  *
  * @see https://github.com/liujinqi/wecom-openclaw-integration
  */
-import type { OpenClawPlugin } from "openclaw/plugin-sdk";
+import type { OpenClawPluginApi } from "openclaw/plugin-sdk";
 import { emptyPluginConfigSchema } from "openclaw/plugin-sdk";
 
 import { wecomPlugin, wecomDock } from "./src/channel.js";
@@ -28,13 +28,19 @@ import { loadMiniProgramConfigFromEnv } from "./src/miniprogram.js";
 /**
  * 插件定义
  */
-const plugin: OpenClawPlugin = {
-  id: "wecom",
+const plugin: {
+  id: string;
+  name: string;
+  description: string;
+  configSchema: any;
+  register: (api: OpenClawPluginApi) => void;
+} = {
+  id: "wecom-openclaw-integration",
   name: "WeCom",
   description: "OpenClaw WeCom (企业微信) channel plugin",
   configSchema: emptyPluginConfigSchema(),
 
-  register(api) {
+  register(api: OpenClawPluginApi) {
     // 设置运行时
     setWeComRuntime(api.runtime);
 
@@ -81,6 +87,7 @@ export { WeComApiClient } from "./src/api.js";
 export { parseMessage, getMessageId, isEventMessage } from "./src/parser.js";
 export { handleWeComWebhookRequest, getWeComConfig, startMonitor, createMonitorServer } from "./src/monitor.js";
 export { wecomPlugin, wecomDock } from "./src/channel.js";
+export { wecomOutbound } from "./src/outbound.js";
 
 // 多账号支持
 export {

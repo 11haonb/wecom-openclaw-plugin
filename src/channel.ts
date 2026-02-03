@@ -6,9 +6,11 @@
 import {
   type ChannelDock,
   type ChannelPlugin,
+  DEFAULT_ACCOUNT_ID,
 } from "openclaw/plugin-sdk";
 import type { WeComAccountConfig, WeComResolvedAccount, WeComSendMessageResponse } from "./types.js";
 import { WeComApiClient } from "./api.js";
+import { wecomOutbound } from "./outbound.js";
 
 // ============================================
 // API 客户端缓存
@@ -65,120 +67,77 @@ export const wecomPlugin: ChannelPlugin<WeComResolvedAccount> = {
   },
 
   capabilities: {
-    supportsThreading: false,
-    supportsEditing: false,
-    supportsDeleting: false,
-    supportsReactions: false,
-    supportsReplies: false,
-    supportsForwarding: false,
-    supportsMedia: true,
-    supportsMarkdown: true,
-    maxMessageLength: 2048,
+    chatTypes: ["direct", "group"],
+    polls: false,
+    threads: false,
+    media: true,
+    reactions: false,
+    edit: false,
+    reply: false,
   },
 
   config: {
-    /**
-     * 列出所有账户 ID
-     */
-    listAccountIds(): string[] {
+    listAccountIds: () => [DEFAULT_ACCOUNT_ID],
+    resolveAccount: (cfg, accountId) => {
       const config = createAccountFromEnv();
-      if (!config) {
-        return [];
-      }
-      return [`wecom:${config.corpId}:${config.agentId}`];
-    },
 
-    /**
-     * 解析账户配置
-     */
-    resolveAccount(raw: unknown): WeComResolvedAccount | null {
-      const config = raw as WeComAccountConfig;
-
-      // 验证必需字段
+      // Always return an account object, but mark as not configured if missing credentials
       if (!config?.corpId || !config?.corpSecret || !config?.agentId) {
-        return null;
+        return {
+          accountId: accountId?.trim() || DEFAULT_ACCOUNT_ID,
+          enabled: false,
+          configured: false,
+          config: {
+            corpId: "",
+            corpSecret: "",
+            agentId: 0,
+            callbackToken: "",
+            callbackAesKey: "",
+            callbackPort: 8080,
+            callbackPath: "/wecom/callback",
+          },
+          corpId: "",
+          agentId: 0,
+        };
       }
 
       if (!config?.callbackToken || !config?.callbackAesKey) {
-        return null;
+        return {
+          accountId: accountId?.trim() || DEFAULT_ACCOUNT_ID,
+          enabled: false,
+          configured: false,
+          config,
+          corpId: config.corpId,
+          agentId: config.agentId,
+        };
       }
 
       // 验证 AES Key 长度
       if (config.callbackAesKey.length !== 43) {
         console.warn("[WeCom] Invalid callbackAesKey length, expected 43 characters");
-        return null;
+        return {
+          accountId: accountId?.trim() || DEFAULT_ACCOUNT_ID,
+          enabled: false,
+          configured: false,
+          config,
+          corpId: config.corpId,
+          agentId: config.agentId,
+        };
       }
 
       return {
+        accountId: accountId?.trim() || DEFAULT_ACCOUNT_ID,
+        enabled: true,
+        configured: true,
         config,
         corpId: config.corpId,
         agentId: config.agentId,
       };
     },
-
-    /**
-     * 获取账户唯一标识
-     */
-    getAccountId(account: WeComResolvedAccount): string {
-      return `wecom:${account.corpId}:${account.agentId}`;
-    },
-
-    /**
-     * 获取账户显示标签
-     */
-    getAccountLabel(account: WeComResolvedAccount): string {
-      return `WeCom Agent ${account.agentId}`;
-    },
+    defaultAccountId: () => DEFAULT_ACCOUNT_ID,
   },
 
-  outbound: {
-    /**
-     * 发送消息
-     */
-    async send(ctx: {
-      account: WeComResolvedAccount;
-      target: string;
-      content: string;
-      options?: {
-        markdown?: boolean;
-      };
-    }): Promise<{
-      success: boolean;
-      messageId?: string;
-      error?: string;
-    }> {
-      const { account, target, content, options } = ctx;
-      const client = getApiClient(account);
-
-      try {
-        let response: WeComSendMessageResponse;
-
-        // 根据选项决定发送文本还是 Markdown
-        if (options?.markdown) {
-          response = await client.sendMarkdown(target, content);
-        } else {
-          response = await client.sendText(target, content);
-        }
-
-        if (response.errcode !== 0) {
-          return {
-            success: false,
-            error: `[${response.errcode}] ${response.errmsg}`,
-          };
-        }
-
-        return {
-          success: true,
-          messageId: response.msgid,
-        };
-      } catch (error) {
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : String(error),
-        };
-      }
-    },
-  },
+  outbound: wecomOutbound,
 };
 
 // ============================================

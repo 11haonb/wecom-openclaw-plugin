@@ -19,6 +19,9 @@ export interface WeComAccountConfig {
 }
 
 export interface WeComResolvedAccount {
+  accountId: string;
+  enabled: boolean;
+  configured: boolean;
   config: WeComAccountConfig;
   corpId: string;
   agentId: number;
