@@ -626,12 +626,21 @@ async function readBody(req: IncomingMessage): Promise<string> {
 }
 
 async function loadConfigFromRuntime(core: any): Promise<OpenClawConfig> {
-  // 尝试从 runtime 获取配置
+  // Try legacy API: core.config.get() (older versions)
   if (core?.config?.get) {
     try {
       return await core.config.get();
     } catch (err) {
-      console.warn("[WeCom] Failed to load config from runtime:", err);
+      console.warn("[WeCom] Failed to load config from runtime via config.get():", err);
+    }
+  }
+
+  // Try current PluginRuntime API: core.config.loadConfig() (sync)
+  if (core?.config?.loadConfig) {
+    try {
+      return core.config.loadConfig();
+    } catch (err) {
+      console.warn("[WeCom] Failed to load config from runtime via config.loadConfig():", err);
     }
   }
 
