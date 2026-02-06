@@ -158,13 +158,25 @@ export function createAccountFromEnv(): WeComAccountConfig | null {
     return null;
   }
 
+  const parsedAgentId = parseInt(agentId, 10);
+  if (isNaN(parsedAgentId)) {
+    console.error("[WeCom] Invalid WECOM_AGENT_ID: must be a number");
+    return null;
+  }
+
+  const parsedCallbackPort = parseInt(process.env.WECOM_CALLBACK_PORT || "8080", 10);
+  if (isNaN(parsedCallbackPort)) {
+    console.error("[WeCom] Invalid WECOM_CALLBACK_PORT: must be a number");
+    return null;
+  }
+
   return {
     corpId,
     corpSecret,
-    agentId: parseInt(agentId, 10),
+    agentId: parsedAgentId,
     callbackToken,
     callbackAesKey,
-    callbackPort: parseInt(process.env.WECOM_CALLBACK_PORT || "8080", 10),
+    callbackPort: parsedCallbackPort,
     callbackPath: process.env.WECOM_CALLBACK_PATH || "/wecom/callback",
   };
 }

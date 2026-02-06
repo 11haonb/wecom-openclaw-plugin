@@ -117,9 +117,18 @@ export class WeComCrypto {
   }
 
   private pkcs7Unpad(data: Buffer): Buffer {
+    if (data.length === 0) {
+      throw new Error("Invalid PKCS#7 padding: empty data");
+    }
     const padLen = data[data.length - 1];
-    if (padLen === undefined || padLen < 1 || padLen > 32) {
+    if (padLen === undefined || padLen < 1 || padLen > 32 || padLen > data.length) {
       throw new Error("Invalid PKCS#7 padding");
+    }
+    // Verify all padding bytes are correct
+    for (let i = data.length - padLen; i < data.length; i++) {
+      if (data[i] !== padLen) {
+        throw new Error("Invalid PKCS#7 padding: inconsistent padding bytes");
+      }
     }
     return data.subarray(0, data.length - padLen);
   }

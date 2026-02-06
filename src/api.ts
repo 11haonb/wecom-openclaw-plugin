@@ -218,23 +218,33 @@ export class WeComApiClient {
     return ".jpg";
   }
 
-  private downloadFile(url: string, destPath: string): Promise<void> {
+  private downloadFile(url: string, destPath: string, maxRedirects = 5): Promise<void> {
     return new Promise((resolve, reject) => {
+      if (maxRedirects <= 0) {
+        reject(new Error("Too many redirects"));
+        return;
+      }
+
       const file = fs.createWriteStream(destPath);
       const protocol = url.startsWith("https") ? https : require("http");
 
-      protocol.get(url, { family: 4, timeout: 30000 }, (res: any) => {
+      const req = protocol.get(url, { family: 4, timeout: 30000 }, (res: any) => {
         if (res.statusCode === 301 || res.statusCode === 302) {
           // Handle redirect
           file.close();
-          fs.unlinkSync(destPath);
-          this.downloadFile(res.headers.location, destPath).then(resolve).catch(reject);
+          try { fs.unlinkSync(destPath); } catch (e) {}
+          const location = res.headers.location;
+          if (!location) {
+            reject(new Error("Redirect without location header"));
+            return;
+          }
+          this.downloadFile(location, destPath, maxRedirects - 1).then(resolve).catch(reject);
           return;
         }
 
         if (res.statusCode !== 200) {
           file.close();
-          fs.unlinkSync(destPath);
+          try { fs.unlinkSync(destPath); } catch (e) {}
           reject(new Error(`Download failed: HTTP ${res.statusCode}`));
           return;
         }
@@ -244,10 +254,24 @@ export class WeComApiClient {
           file.close();
           resolve();
         });
-      }).on("error", (err: Error) => {
+        file.on("error", (err: Error) => {
+          file.close();
+          try { fs.unlinkSync(destPath); } catch (e) {}
+          reject(err);
+        });
+      });
+
+      req.on("error", (err: Error) => {
         file.close();
         try { fs.unlinkSync(destPath); } catch (e) {}
         reject(err);
+      });
+
+      req.on("timeout", () => {
+        req.destroy();
+        file.close();
+        try { fs.unlinkSync(destPath); } catch (e) {}
+        reject(new Error("Download timeout"));
       });
     });
   }
