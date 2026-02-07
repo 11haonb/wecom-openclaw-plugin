@@ -631,9 +631,17 @@ export async function processInboundMessage(
 // 辅助函数
 // ============================================
 async function readBody(req: IncomingMessage): Promise<string> {
+  const MAX_BODY_SIZE = 1024 * 1024; // 1MB
   return new Promise((resolve, reject) => {
     let body = "";
+    let size = 0;
     req.on("data", (chunk) => {
+      size += chunk.length;
+      if (size > MAX_BODY_SIZE) {
+        req.destroy();
+        reject(new Error("Request body too large"));
+        return;
+      }
       body += chunk.toString();
     });
     req.on("end", () => {

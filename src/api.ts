@@ -75,7 +75,6 @@ export class WeComApiClient {
   async sendText(target: string, content: string): Promise<WeComSendMessageResponse> {
     console.log(`[WeCom API] Sending text to ${target}, length=${content.length}`);
     const token = await this.getToken();
-    console.log(`[WeCom API] Got token: ${token.substring(0, 20)}...`);
     const url = `https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=${token}`;
 
     // 判断是群聊还是用户
@@ -370,11 +369,12 @@ export class WeComApiClient {
   /**
    * HTTP POST multipart/form-data (用于文件上传)
    */
-  private httpPostMultipart<T>(url: string, filePath: string): Promise<T> {
+  private async httpPostMultipart<T>(url: string, filePath: string): Promise<T> {
     return new Promise((resolve, reject) => {
       const urlObj = new URL(url);
       const boundary = `----WebKitFormBoundary${Date.now().toString(16)}`;
-      const fileName = path.basename(filePath);
+      // Sanitize filename to prevent header injection
+      const fileName = path.basename(filePath).replace(/["\r\n\\]/g, "_");
       const fileContent = fs.readFileSync(filePath);
 
       // 构建 multipart body

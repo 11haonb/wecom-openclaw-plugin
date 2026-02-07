@@ -6,7 +6,7 @@ import type { WeComParsedMessage, WeComMsgType, WeComEventType, WeComChatType } 
 
 const parser = new XMLParser({
   ignoreAttributes: false,
-  parseTagValue: true,
+  parseTagValue: false,
   trimValues: true,
 });
 

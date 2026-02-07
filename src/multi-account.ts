@@ -218,13 +218,18 @@ export function loadMultiAccountConfigFromEnv(): WeComMultiAccountConfig {
       if (Array.isArray(parsed)) {
         for (const item of parsed) {
           if (isValidAccountConfig(item)) {
+            const parsedAgentId = typeof item.agentId === "string" ? parseInt(item.agentId, 10) : item.agentId;
+            if (isNaN(parsedAgentId)) {
+              console.warn(`[WeCom] Skipping account with invalid agentId: ${item.agentId}`);
+              continue;
+            }
             accounts.push({
-              id: item.id || `${item.corpId}:${item.agentId}`,
+              id: item.id || `${item.corpId}:${parsedAgentId}`,
               name: item.name,
               config: {
                 corpId: item.corpId,
                 corpSecret: item.corpSecret,
-                agentId: typeof item.agentId === "string" ? parseInt(item.agentId, 10) : item.agentId,
+                agentId: parsedAgentId,
                 callbackToken: item.callbackToken,
                 callbackAesKey: item.callbackAesKey,
                 callbackPort: item.callbackPort,
