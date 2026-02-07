@@ -84,7 +84,7 @@ export class WeComMiniProgramClient {
     const body = JSON.stringify({
       ...(isGroupChat ? { chatid: target } : { touser: target }),
       msgtype: "miniprogram_notice",
-      agentid: (this.client as any).config.agentId,
+      agentid: this.client.agentId,
       miniprogram_notice: {
         appid: notice.appid,
         page: notice.pagepath,
@@ -122,7 +122,7 @@ export class WeComMiniProgramClient {
     const body = JSON.stringify({
       ...(isGroupChat ? { chatid: target } : { touser: target }),
       msgtype: "textcard",
-      agentid: (this.client as any).config.agentId,
+      agentid: this.client.agentId,
       textcard: {
         title: card.title,
         description: card.description,
@@ -178,7 +178,7 @@ export class WeComMiniProgramClient {
     const body = JSON.stringify({
       ...(isGroupChat ? { chatid: target } : { touser: target }),
       msgtype: "template_card",
-      agentid: (this.client as any).config.agentId,
+      agentid: this.client.agentId,
       template_card: {
         card_type: template.cardType,
         source: template.source,
@@ -220,8 +220,7 @@ export class WeComMiniProgramClient {
   }
 
   private async httpPost<T>(url: string, body: string): Promise<T> {
-    // 复用 client 的 httpPost 方法
-    return (this.client as any).httpPost(url, body);
+    return this.client.postJson<T>(url, body);
   }
 }
 

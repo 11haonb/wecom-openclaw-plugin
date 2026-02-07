@@ -203,7 +203,7 @@ async function handleRequest(
     const body = await readBody(req);
 
     // 提取加密内容
-    const encryptMatch = body.match(/<Encrypt><!\[CDATA\[(.*?)\]\]><\/Encrypt>/);
+    const encryptMatch = body.match(/<Encrypt><!\[CDATA\[(.*?)\]\]><\/Encrypt>/s);
     if (!encryptMatch) {
       console.warn("[WeCom] Invalid message format: no Encrypt field");
       res.writeHead(400);
@@ -617,13 +617,14 @@ export async function processInboundMessage(
   } catch (err) {
     console.error("[WeCom] Dispatch failed:", err);
 
-    // 发送错误提示
-    const client = getApiClient(accountConfig);
-    const replyTarget = isGroup ? msg.chatId! : senderId;
-    await client.sendText(
-      replyTarget,
-      `抱歉，处理消息时出错: ${err instanceof Error ? err.message : String(err)}`
-    );
+    // 发送通用错误提示，不泄露内部信息
+    try {
+      const client = getApiClient(accountConfig);
+      const replyTarget = isGroup ? msg.chatId! : senderId;
+      await client.sendText(replyTarget, "抱歉，处理消息时出现了问题，请稍后再试。");
+    } catch (sendErr) {
+      console.error("[WeCom] Failed to send error message:", sendErr);
+    }
   }
 }
 
@@ -635,9 +636,12 @@ async function readBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
     let body = "";
     let size = 0;
+    let settled = false;
     req.on("data", (chunk) => {
+      if (settled) return;
       size += chunk.length;
       if (size > MAX_BODY_SIZE) {
+        settled = true;
         req.destroy();
         reject(new Error("Request body too large"));
         return;
@@ -645,9 +649,15 @@ async function readBody(req: IncomingMessage): Promise<string> {
       body += chunk.toString();
     });
     req.on("end", () => {
+      if (settled) return;
+      settled = true;
       resolve(body);
     });
-    req.on("error", reject);
+    req.on("error", (err) => {
+      if (settled) return;
+      settled = true;
+      reject(err);
+    });
   });
 }
 
@@ -767,7 +777,7 @@ export interface MonitorConfig {
 export function createMonitorServer(config: MonitorConfig): http.Server {
   const server = http.createServer(async (req, res) => {
     try {
-      const url = new URL(req.url || "/", `http://${req.headers.host}`);
+      const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
 
       // 健康检查
       if (url.pathname === "/health" || url.pathname === "/wecom/health") {
@@ -807,7 +817,7 @@ export function createMonitorServer(config: MonitorConfig): http.Server {
         const body = await readBody(req);
 
         // 提取加密内容
-        const encryptMatch = body.match(/<Encrypt><!\[CDATA\[(.*?)\]\]><\/Encrypt>/);
+        const encryptMatch = body.match(/<Encrypt><!\[CDATA\[(.*?)\]\]><\/Encrypt>/s);
         if (!encryptMatch) {
           res.writeHead(400);
           res.end("Bad Request");

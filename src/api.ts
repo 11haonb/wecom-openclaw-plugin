@@ -23,9 +23,16 @@ export class WeComApiClient {
   private token: string | null = null;
   private tokenExpiresAt = 0;
   private refreshPromise: Promise<string> | null = null;
+  private lastRefreshFailure = 0;
+  private static REFRESH_COOLDOWN = 5000; // 5 seconds
 
   constructor(config: ApiClientConfig) {
     this.config = config;
+  }
+
+  /** 获取 agentId */
+  get agentId(): number {
+    return this.config.agentId;
   }
 
   /**
@@ -36,13 +43,21 @@ export class WeComApiClient {
       return this.token;
     }
 
+    if (Date.now() - this.lastRefreshFailure < WeComApiClient.REFRESH_COOLDOWN) {
+      throw new Error("Token refresh on cooldown after recent failure");
+    }
+
     if (this.refreshPromise) {
       return this.refreshPromise;
     }
 
     this.refreshPromise = this.refreshToken();
     try {
-      return await this.refreshPromise;
+      const token = await this.refreshPromise;
+      return token;
+    } catch (err) {
+      this.lastRefreshFailure = Date.now();
+      throw err;
     } finally {
       this.refreshPromise = null;
     }
@@ -88,7 +103,7 @@ export class WeComApiClient {
       text: { content },
     });
 
-    console.log(`[WeCom API] POST to ${url.substring(0, 60)}... (${isGroupChat ? "group" : "user"})`);
+    console.log(`[WeCom API] POST to message/send (${isGroupChat ? "group" : "user"})`);
     const result = await this.httpPost<WeComSendMessageResponse>(url, body);
     console.log(`[WeCom API] Response: errcode=${result.errcode}, errmsg=${result.errmsg}`);
     return result;
@@ -316,6 +331,11 @@ export class WeComApiClient {
 
       req.end();
     });
+  }
+
+  /** 发送 JSON POST 请求（供扩展模块使用） */
+  postJson<T>(url: string, body: string): Promise<T> {
+    return this.httpPost<T>(url, body);
   }
 
   private httpPost<T>(url: string, body: string): Promise<T> {
@@ -656,8 +676,8 @@ export class WeComApiClient {
     }
 
     const ext = fileName ? path.extname(fileName) : this.getFileExtension(fileUrl);
-    const baseName = fileName || `file-${Date.now()}${ext}`;
-    const tempFile = path.join(tempDir, baseName);
+    const safeName = fileName ? path.basename(fileName) : `file-${Date.now()}${ext}`;
+    const tempFile = path.join(tempDir, safeName);
 
     await this.downloadFile(fileUrl, tempFile);
     console.log(`[WeCom API] Downloaded to: ${tempFile}`);

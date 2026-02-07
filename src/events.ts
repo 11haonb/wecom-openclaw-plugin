@@ -38,10 +38,10 @@ export function offEvent(eventType: WeComEventType | "*", handler: WeComEventHan
   const handlers = eventHandlers.get(eventType);
   if (!handlers) return false;
 
-  const index = handlers.indexOf(handler);
-  if (index === -1) return false;
+  const filtered = handlers.filter(h => h !== handler);
+  if (filtered.length === handlers.length) return false;
 
-  handlers.splice(index, 1);
+  eventHandlers.set(eventType, filtered);
   return true;
 }
 
@@ -257,6 +257,8 @@ export function getMenuAction(eventKey?: string): WeComEventHandler | undefined 
  * 初始化默认事件处理器
  */
 export function initDefaultEventHandlers(): void {
+  clearEventHandlers();
+
   onEvent("subscribe", handleSubscribe);
   onEvent("unsubscribe", handleUnsubscribe);
   onEvent("enter_agent", handleEnterAgent);
