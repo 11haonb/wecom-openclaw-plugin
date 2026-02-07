@@ -67,6 +67,25 @@ export function clearDedupCache(): void {
 // 群聊历史记录 (持久化)
 // ============================================
 const persistentChatHistories = new Map<string, HistoryEntry[]>();
+const CHAT_HISTORY_MAX_GROUPS = 500;
+const CHAT_HISTORY_MAX_ENTRIES = 50;
+
+function trimChatHistories(): void {
+  // 限制每个群的历史条目数
+  for (const [key, entries] of persistentChatHistories) {
+    if (entries.length > CHAT_HISTORY_MAX_ENTRIES) {
+      persistentChatHistories.set(key, entries.slice(-CHAT_HISTORY_MAX_ENTRIES));
+    }
+  }
+  // 限制群数量，移除最旧的
+  if (persistentChatHistories.size > CHAT_HISTORY_MAX_GROUPS) {
+    const keys = Array.from(persistentChatHistories.keys());
+    const toDelete = keys.slice(0, keys.length - CHAT_HISTORY_MAX_GROUPS);
+    for (const key of toDelete) {
+      persistentChatHistories.delete(key);
+    }
+  }
+}
 
 // ============================================
 // API 客户端缓存
@@ -613,6 +632,9 @@ export async function processInboundMessage(
         });
       }
     }
+
+    // 定期清理历史记录防止内存泄漏
+    trimChatHistories();
 
     if (queuedFinal) {
       console.log(`[WeCom] Response queued for ${replyTarget}, counts:`, counts);

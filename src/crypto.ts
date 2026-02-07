@@ -103,13 +103,16 @@ export class WeComCrypto {
    */
   encryptReply(replyMsg: string, timestamp: string, nonce: string): string {
     const encrypted = this.encrypt(replyMsg);
-    const signature = this.calculateSignature(timestamp, nonce, encrypted);
+    // Sanitize inputs to prevent XML injection
+    const safeTimestamp = timestamp.replace(/[^0-9]/g, "");
+    const safeNonce = nonce.replace(/[\]]/g, "");
+    const signature = this.calculateSignature(safeTimestamp, safeNonce, encrypted);
 
     return `<xml>
 <Encrypt><![CDATA[${encrypted}]]></Encrypt>
 <MsgSignature><![CDATA[${signature}]]></MsgSignature>
-<TimeStamp>${timestamp}</TimeStamp>
-<Nonce><![CDATA[${nonce}]]></Nonce>
+<TimeStamp>${safeTimestamp}</TimeStamp>
+<Nonce><![CDATA[${safeNonce}]]></Nonce>
 </xml>`;
   }
 

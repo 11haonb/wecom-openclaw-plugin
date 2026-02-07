@@ -2,6 +2,7 @@
  * WeCom API 客户端
  */
 import https from "node:https";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import type {
@@ -206,7 +207,7 @@ export class WeComApiClient {
     }
 
     const ext = this.getImageExtension(imageUrl);
-    const tempFile = path.join(tempDir, `img-${Date.now()}${ext}`);
+    const tempFile = path.join(tempDir, `img-${crypto.randomBytes(8).toString("hex")}${ext}`);
 
     await this.downloadFile(imageUrl, tempFile);
     console.log(`[WeCom API] Downloaded to: ${tempFile}`);
@@ -310,7 +311,7 @@ export class WeComApiClient {
         res.on("end", () => {
           try {
             const body = Buffer.concat(chunks).toString("utf8");
-            console.log(`[WeCom API] httpGet response: ${body.substring(0, 100)}`);
+            console.log(`[WeCom API] httpGet response received`);
             resolve(JSON.parse(body) as T);
           } catch (error) {
             reject(new Error(`Failed to parse response: ${error}`));
@@ -362,7 +363,7 @@ export class WeComApiClient {
         res.on("end", () => {
           try {
             const responseBody = Buffer.concat(chunks).toString("utf8");
-            console.log(`[WeCom API] httpPost response: ${responseBody.substring(0, 200)}`);
+            console.log(`[WeCom API] httpPost response received`);
             resolve(JSON.parse(responseBody) as T);
           } catch (error) {
             reject(new Error(`Failed to parse response: ${error}`));
@@ -427,7 +428,7 @@ export class WeComApiClient {
         res.on("end", () => {
           try {
             const responseBody = Buffer.concat(chunks).toString("utf8");
-            console.log(`[WeCom API] httpPostMultipart response: ${responseBody.substring(0, 200)}`);
+            console.log(`[WeCom API] httpPostMultipart response received`);
             resolve(JSON.parse(responseBody) as T);
           } catch (error) {
             reject(new Error(`Failed to parse response: ${error}`));
@@ -484,7 +485,7 @@ export class WeComApiClient {
       fs.mkdirSync(tempDir, { recursive: true });
     }
 
-    const destPath = savePath || path.join(tempDir, `media-${Date.now()}`);
+    const destPath = savePath || path.join(tempDir, `media-${crypto.randomBytes(8).toString("hex")}`);
 
     return new Promise((resolve, reject) => {
       const urlObj = new URL(url);
@@ -676,7 +677,7 @@ export class WeComApiClient {
     }
 
     const ext = fileName ? path.extname(fileName) : this.getFileExtension(fileUrl);
-    const safeName = fileName ? path.basename(fileName) : `file-${Date.now()}${ext}`;
+    const safeName = fileName ? path.basename(fileName) : `file-${crypto.randomBytes(8).toString("hex")}${ext}`;
     const tempFile = path.join(tempDir, safeName);
 
     await this.downloadFile(fileUrl, tempFile);
@@ -735,7 +736,7 @@ export class WeComApiClient {
     }
 
     const ext = this.getVideoExtension(videoUrl);
-    const tempFile = path.join(tempDir, `video-${Date.now()}${ext}`);
+    const tempFile = path.join(tempDir, `video-${crypto.randomBytes(8).toString("hex")}${ext}`);
 
     await this.downloadFile(videoUrl, tempFile);
     console.log(`[WeCom API] Downloaded to: ${tempFile}`);
