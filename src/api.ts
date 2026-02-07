@@ -2,6 +2,7 @@
  * WeCom API 客户端
  */
 import https from "node:https";
+import http from "node:http";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -240,8 +241,35 @@ export class WeComApiClient {
         return;
       }
 
+      // Validate URL to prevent SSRF
+      if (!url.startsWith("https://") && !url.startsWith("http://")) {
+        reject(new Error("Only http/https URLs are allowed"));
+        return;
+      }
+      try {
+        const parsed = new URL(url);
+        const hostname = parsed.hostname;
+        // Block internal/private network addresses
+        if (
+          hostname === "localhost" ||
+          hostname === "127.0.0.1" ||
+          hostname === "0.0.0.0" ||
+          hostname.startsWith("10.") ||
+          hostname.startsWith("172.") ||
+          hostname.startsWith("192.168.") ||
+          hostname === "::1" ||
+          hostname.endsWith(".local")
+        ) {
+          reject(new Error("Downloads from internal networks are not allowed"));
+          return;
+        }
+      } catch {
+        reject(new Error("Invalid URL"));
+        return;
+      }
+
       const file = fs.createWriteStream(destPath);
-      const protocol = url.startsWith("https") ? https : require("http");
+      const protocol = url.startsWith("https") ? https : http;
 
       const req = protocol.get(url, { family: 4, timeout: 30000 }, (res: any) => {
         if (res.statusCode === 301 || res.statusCode === 302) {

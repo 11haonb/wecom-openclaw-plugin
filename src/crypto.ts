@@ -105,7 +105,7 @@ export class WeComCrypto {
     const encrypted = this.encrypt(replyMsg);
     // Sanitize inputs to prevent XML injection
     const safeTimestamp = timestamp.replace(/[^0-9]/g, "");
-    const safeNonce = nonce.replace(/[\]]/g, "");
+    const safeNonce = nonce.replace(/[^a-zA-Z0-9]/g, "");
     const signature = this.calculateSignature(safeTimestamp, safeNonce, encrypted);
 
     return `<xml>

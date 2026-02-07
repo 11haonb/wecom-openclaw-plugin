@@ -12,7 +12,7 @@ import {
   type ReplyPayload,
 } from "openclaw/plugin-sdk";
 import { getWeComRuntime } from "./runtime.js";
-import { WeComApiClient } from "./api.js";
+import { getApiClient } from "./monitor.js";
 import type { WeComAccountConfig } from "./types.js";
 
 export type CreateWeComReplyDispatcherParams = {
@@ -75,11 +75,7 @@ export function createWeComReplyDispatcher(params: CreateWeComReplyDispatcherPar
   const chunkMode: "length" | "newline" = "length";
   const tableMode: "off" | "bullets" | "code" = "bullets";
 
-  const client = new WeComApiClient({
-    corpId: accountConfig.corpId,
-    corpSecret: accountConfig.corpSecret,
-    agentId: accountConfig.agentId,
-  });
+  const client = getApiClient(accountConfig);
 
   const { dispatcher, replyOptions, markDispatchIdle } =
     core.channel.reply.createReplyDispatcherWithTyping({
