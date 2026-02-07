@@ -18,7 +18,7 @@ import type { WeComAccountConfig, WeComParsedMessage, WeComExtendedConfig } from
 import { WeComCrypto } from "./crypto.js";
 import { parseMessage, getMessageId, isEventMessage, isGroupMessage, getSessionId, getSenderId } from "./parser.js";
 import { WeComApiClient } from "./api.js";
-import { shouldRespond, processMessageContent, type MentionConfig } from "./mention.js";
+import { hasMention, shouldRespond, processMessageContent, type MentionConfig } from "./mention.js";
 import { isGroupAllowed, isUserAllowedInGroup, groupRequiresMention, DEFAULT_GROUP_CONFIG } from "./group-policy.js";
 import { getWeComRuntime } from "./runtime.js";
 import { createWeComReplyDispatcher } from "./reply-dispatcher.js";
@@ -62,6 +62,11 @@ export function isDuplicate(msgId: string | undefined): boolean {
 export function clearDedupCache(): void {
   seenMessages.clear();
 }
+
+// ============================================
+// 群聊历史记录 (持久化)
+// ============================================
+const persistentChatHistories = new Map<string, HistoryEntry[]>();
 
 // ============================================
 // API 客户端缓存
@@ -522,7 +527,7 @@ export async function processInboundMessage(
     // 处理群聊历史记录
     let combinedBody = body;
     const historyKey = isGroup ? msg.chatId : undefined;
-    const chatHistories = options.chatHistories ?? new Map<string, HistoryEntry[]>();
+    const chatHistories = options.chatHistories ?? persistentChatHistories;
     const historyLimit = DEFAULT_GROUP_HISTORY_LIMIT;
 
     if (isGroup && historyKey && chatHistories) {
@@ -559,7 +564,7 @@ export async function processInboundMessage(
       Surface: "wecom" as const,
       MessageSid: msg.msgId || `wecom-${Date.now()}`,
       Timestamp: msg.createTime * 1000,
-      WasMentioned: isGroup && requireMention,
+      WasMentioned: isGroup && hasMention(rawContent, mentionConfig),
       CommandAuthorized: true,
       OriginatingChannel: "wecom" as const,
       OriginatingTo: wecomTo,

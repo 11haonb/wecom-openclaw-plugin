@@ -32,7 +32,11 @@ export class WeComCrypto {
     encrypted?: string
   ): boolean {
     const calculated = this.calculateSignature(timestamp, nonce, encrypted);
-    return calculated === signature;
+    // Timing-safe comparison to prevent timing attacks
+    const a = Buffer.from(calculated, "utf8");
+    const b = Buffer.from(signature, "utf8");
+    if (a.length !== b.length) return false;
+    return crypto.timingSafeEqual(a, b);
   }
 
   /**

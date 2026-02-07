@@ -49,8 +49,8 @@ export function removeMention(content: string, config: MentionConfig): string {
 
   let result = content;
   for (const name of names) {
-    // 移除 @名称 及其后面的空格
-    const pattern = new RegExp(`@${escapeRegex(name)}\\s*`, "gi");
+    // 只移除第一个 @名称，使用词边界避免误匹配
+    const pattern = new RegExp(`@${escapeRegex(name)}(?=\\s|$|[，。！？,\\.!?])\\s*`, "i");
     result = result.replace(pattern, "");
   }
 
